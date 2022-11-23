@@ -1,0 +1,174 @@
+---
+title: "Untitled"
+output: html_document
+date: "2022-11-23"
+---
+
+```{r}
+library(quantmod)
+ 
+library(xts)
+ 
+library(sidrar)
+ 
+library(timetk)
+ 
+library(tidyverse)
+```
+
+## Índice Ibovespa
+
+Ref: https://www.voitto.com.br/blog/artigo/indice-ibovespa/amp?gclid=Cj0KCQiAg_KbBhDLARIsANx7wAwXGsMBlM-f3Uy0kyeTENPZB71La3fGRHecYvytFox5dWMJ6lgsrOwaAiZpEALw_wcB
+
+Um país possui diversos cálculos e índices que indicam o crescimento da economia, como o Produto Interno Bruto (PIB), PIB per capita, taxa SELIC, Índice Geral de Preços de Mercado (IGP-M). Dentre eles, temos o índice Ibovespa, que é o principal comparativo quando falamos sobre mercado de ações e renda variável.
+
+O índice Ibovespa é um dos principais indicadores macroeconômicos do Brasil. Ele reflete o desempenho das ações de empresas que negociam seus títulos na Bolsa de Valores de São Paulo, a B3 - Brasil Bolsa Balcão.
+
+Toda empresa que negocia suas ações publicamente lida com uma variação de preço em seus papéis, que depende do nível de interesse dos investidores em comprar aquele papel.
+
+Muitos fatores influenciam o preço de uma ação, e a maior parte deles está ligada à saúde financeira da companhia. O nível de endividamento, capacidade de crescimento, integridade da diretoria, resultados financeiros, lucro: tudo isso impacta a decisão de compra dos investidores, e consequentemente, o valor da ação.
+
+Outros indicadores são utilizados pelos traders para determinar se haverá retorno financeiro ao investir naquela empresa, como o ROI (retorno sobre investimento) e o pagamento de dividendos (parte do lucro da empresa que vai para os acionistas).
+
+O índice Ibovespa acompanha essas variações de preço das ações das principais empresas do país. Elas compõem uma carteira de investimentos teórica, definida pela própria B3, e que pode ser alterada conforme o cenário do mercado muda.
+
+O conjunto de ações que impactam o índice Ibovespa é reavaliado a cada quatro meses. A relevância de uma ação é determinada pelo seu volume de negociação e capacidade de liquidez.
+
+Ele é muito importante para quem investe no mercado de ações, e para os mercados financeiros como um todo. Por meio dele, um investidor pode avaliar a consistência e o crescimento da economia do Brasil, e se irá realizar um aporte de capital significativo ou não.
+
+Isso acaba impactando até mesmo empresas em estágios iniciais de desenvolvimento, que estão buscando captar recursos no mercado por meio de um investimento inicial externo. Essa situação é muito comum no caso das startups, por exemplo.
+
+Assim, quando o índice Ibovespa está em baixa, isso geralmente é um sinal negativo para todo o mercado, já que quer dizer que os investidores estão em alerta para algum evento relevante que irá impactar o cenário nacional ou mundial.
+
+### Cálculo
+
+Como o cálculo do índice Ibovespa é realizado?
+ 
+
+O índice Ibovespa foi criado em 1968, e desde então, realiza o cálculo da pontuação com base nas principais ações negociadas na B3. Para entrar para o rol de empresas que influenciam o índice, existem algumas exigências.
+
+Em primeiro lugar, o Índice de Negociabilidade, um cálculo que tem relação direta com o volume de negociação da ação e sua representatividade na bolsa, deve ser superior a 85%. A empresa também deve estar presente em pelo menos 95% dos pregões.
+
+Ela precisa corresponder a 0,1% do volume financeiro no mercado à vista (lote padrão), e não pode valer menos do que R$1, as chamadas Penny Stock.
+
+A partir dessa seleção de empresas, a cotação das ações passam a fazer parte do cálculo de pontos. O impacto que a ação de uma companhia terá na fórmula é calculado multiplicando a cotação pelo peso.
+
+Por fim, a pontuação geral é calculada em tempo real, com base na cotação de cada ação (considerando seus respectivos pesos) multiplicada pela quantidade de ativos da carteira teórica.
+
+Cada ponto equivale a uma unidade da moeda corrente. No caso atual, que utilizamos o real, quando o resultado do índice Ibovespa é 100.000 pontos, por exemplo, quer dizer que um investidor que comprou as ações da carteira possui um patrimônio aplicado de R$100.000,00.
+
+### Variações do índice
+
+Como compreender as altas do índice Ibovespa?
+ 
+
+Uma variação positiva do índice Ibovespa geralmente é um bom sinal.
+
+Quando a bolsa fecha em alta, ou seja, a pontuação do pregão atual superou o valor do anterior, quer dizer que os investidores têm expectativas positivas em relação ao desempenho das empresas, e que há uma boa perspectiva de lucro.
+
+Ela também reflete um otimismo em relação à economia do país como um todo. Geralmente, quando investidores se sentem confortáveis ao comprar ações em uma das bolsas de valores de algum país, isso quer dizer que há uma confiança naquelas empresas e no governo daquele país.
+
+Como o índice Ibovespa é o principal índice do Brasil, podemos observar altas em várias situações do dia a dia do país. Por exemplo, geralmente o Ibovespa entra em alta quando alguma lei que irá beneficiar o mercado financeiro vai ser aprovada.
+
+Por isso, o investidor pode prestar atenção nos eventos políticos e sociais do país, além dos econômicos. O índice Ibovespa é macroeconômico, ou seja, reflete a situação geral do país, com muitos fatores a serem considerados.
+
+Um detalhe importante é que ações de uma única empresa, ou das principais empresas, podem puxar o índice todo para cima. Se as ações da Petrobras e Vale sobem, por exemplo, a tendência é que a bolsa entre em alta. Isso porque essas são duas das ações de maior volume negociado.
+
+Como o índice é calculado e é composto por empresas de diferentes setores, enquanto algumas ações estão em alta puxando a bolsa inteira, outras podem estar em baixa. Portanto, é preciso ficar atento na hora de investir. Apesar de ser o principal índice do mercado brasileiro, o Ibovespa não deve ser o único a ser considerado.
+
+
+
+## Renda variável e renda fixa
+
+Ref: https://www.voitto.com.br/blog/artigo/renda-variavel
+
+A renda variável é composta por um conjunto de aplicações financeiras cujo o retorno não pode ser calculado no momento do investimento. Seus rendimentos são voláteis, por isso é considerada como uma modalidade arriscada.
+
+Os preços dos ativos podem oscilar de acordo com tendências político-econômicas e especificidades dos setores. Também pelo gerenciamento interno de empresas e fundos, além do desempenho dos concorrentes.
+
+Como você já sabe, não há previsibilidade de retorno nos investimentos de renda variável. Sendo assim, essa é uma de suas principais diferenças para a renda fixa. Na maioria das aplicações deste segundo grupo é possível saber o retorno no momento da compra. Quando não, sabe-se ao menos que o retorno será positivo.
+
+Além disso, enquanto a renda variável é ideal para o longo prazo, a renda fixa é a melhor opção para investimentos de curto prazo. Por serem mais seguras e não sofrerem muitas oscilações, elas garantem uma rentabilidade positiva mesmo em curtos períodos de tempo.
+
+## Tipos de investimentos com renda variável
+
+Os ativos de renda variável são negociados no mercado financeiro através da Bolsa de Valores. Para ter acesso a esses investimentos é necessário ter conta em uma corretora de valores mobiliários.
+
+Mas antes, confira quais são os principais tipos de produtos de renda variável.
+
+### Ações 
+Os ativos financeiros mais populares da renda variável são as ações. Essas, são emitidas por empresas e negociadas na bolsa de valores. Investindo em ações você se torna dono de uma parte da organização.
+
+### Fundos Imobiliários (FII)
+Se você acredita que aluguéis mensais são um ótimo complemento de renda e não possui dinheiro para comprar um imóvel, os FIIs são perfeitos para você. Esse produto é composto por um grupo de pessoas que juntos são donos de ativos do setor imobiliário.
+
+### Fundos de Investimento (FI)
+Assim como os FII, os Fundos de Investimento são compostos pela junção do capital de diversas pessoas. Também são caracterizados como boas opções para quem quer terceirizar a gestão financeira.
+
+### Exchange Traded Fund (ETF)
+Você já deve ter escutado no jornal sobre o Ibovespa. Esse é o principal índice da bolsa de valores brasileira e é composto pelas maiores empresas de capital aberto. Mas tanto esse como os outros índices são fictícios, representando uma média ponderada dos resultados das empresas que os compõem.
+
+### Moedas e Criptomoedas
+As moedas e as criptomoedas também são modalidades de investimento de renda variável. Quando você compra dólares, por exemplo, com expectativa de valorização é uma aplicação financeira. Isso ocorre tanto em moedas estrangeiras, quanto em moedas virtuais como os Bitcoins.
+
+
+```{r}
+# IBOVESPA
+ 
+## Coleta os dados do Yahoo Finance
+ 
+getSymbols("^BVSP", src= "yahoo",
+from= as.Date('2001-01-01'))
+ 
+## Captura os preços de fechamento
+ 
+ibovespa <- Cl(BVSP) %>%
+na.omit() %>%
+`colnames<-`("ibovespa")
+ 
+## Transforma em trimestral
+ 
+ibov_qtr <- apply.quarterly(ibovespa, FUN = mean) %>%
+tk_tbl(preserve_index = TRUE,
+rename_index = "date") %>%
+mutate(date = as.yearqtr(date, type = "%Y%q"))
+ 
+## Cria o objeto ts
+ 
+ibov_qtr_ts <- ts(ibov_qtr$ibovespa, start=c(2001,01), freq = 4)
+```
+
+```{r}
+plot(ibovespa)
+```
+
+
+```{r}
+# FBCF
+ 
+## Coleta os dados do SIDRA e calcula o crescimento interanual
+ 
+fbcf = get_sidra(api="/t/1620/n1/all/v/all/p/all/c11255/93406/d/v583%202") %>%
+dplyr::select(date = "Trimestre (Código)", value = "Valor") %>%
+mutate(date = as.yearqtr(date, format = "%Y%q"),
+dfbcf = (value/lag(value, 4) -1) * 100)
+ 
+## Cria o objeto ts
+ 
+fbcf_ts = ts(fbcf$value, start=c(1996,01), freq=4)
+ 
+dfbcf_ts = (fbcf_ts/stats::lag(fbcf_ts, -4) -1) * 100
+```
+
+```{r}
+fbcf_ts
+```
+
+```{r}
+dfbcf_ts
+```
+
+
+
+
+

@@ -21,14 +21,10 @@ github-repo: rstudio/bookdown-demo
 
 ## Organização {.unnumbered}
 
-1. Introdução
-2. Analise de ações (Gráficos + Discritivos)
-3. Lista de regressões (Aula 6) - [EXERCICIOS.pdf](./exercises/EXERCICIOS.pdf)
-4. Lab 3 (Aula 8 ) [LABORATÓRIO R.pdf](./exercises/LABORATÓRIO R.pdf)
-
-## Conjunto de dados
-
-- [dados](./dados)
+1. [Analise de ações (Gráficos + Discritivos)](#descriptive)
+2. [Lista de regressões (Aula 6)](#regression) - [EXERCICIOS.pdf](./exercises/EXERCICIOS.pdf)
+3. [Lab 3 (Aula 8 - Classificação)](#classification) [LABORATÓRIO R.pdf](./exercises/LABORATORIO-R.pdf)
+4. [Trabalho de conclusão](#final-work)
 
 
 ```{r include=FALSE}

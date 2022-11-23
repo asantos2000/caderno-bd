@@ -1,0 +1,22 @@
+# Regressão {#regression}
+
+A regressão em geral tem como objetivo:
+
+1. Medir a influência de uma ou mais variáveis explicativas (x)  sobre a variável resposta (y);
+2. Predição de uma variável resposta (y) a partir de uma ou mais variáveis explicativas (x).
+
+
+## Conjunto de dados
+
+Este conjunto de dados foram criados pela professora Dra.Olga Satomi Yoshida para aula de Big Data no IPT.
+
+1. Preço das casas: Data_HousePrice_Area.xlsx
+2. Consumo de energia: Data_ConsumoEnergia.xlsx
+3. SALES_X_YOUTUBE: DadosAula06.xlsx
+4. CREDIT SCORE X RENDA E OUTRAS V: DadosAula06.xlsx
+
+
+```{r, child=c('sub-chap/regression-a.Rmd', 'sub-chap/regression-b.Rmd', 'sub-chap/regression-c.Rmd', 'sub-chap/regression-d.Rmd', 'sub-chap/regression-e.Rmd')}
+```
+
+

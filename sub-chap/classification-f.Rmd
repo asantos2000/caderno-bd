@@ -1,0 +1,75 @@
+## Análise do conjunto de dados USArrests
+
+Análise de agrupamento para os dados USArrests.
+
+### Pacotes
+
+Pacotes necessários para estes exercícios:
+
+```{r warning=FALSE}
+library(readxl)
+library(tidyverse)
+library(readxl)
+library(ggthemes)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(factoextra)
+```
+
+### Conjunto de dados
+
+[USArrests](https://www.rdocumentation.org/packages/datasets/versions/3.6.2/topics/USArrests) é um conjunto de dados contendo estatísticas de prisões por 100.000 habitantes por agressão, assassinato e estupro em cada um dos 50 estados dos EUA em 1973. Também é fornecida a porcentagem da população que vive em áreas urbanas.
+
+
+```{r results=FALSE, warning=FALSE, message=FALSE}
+summary(USArrests)
+
+require(graphics)
+pairs(USArrests, panel = panel.smooth, main = "USArrests data")
+
+## Difference between 'USArrests' and its correction
+USArrests["Maryland", "UrbanPop"] # 67 -- the transcription error
+UA.C <- USArrests
+UA.C["Maryland", "UrbanPop"] <- 76.6
+
+## also +/- 0.5 to restore the original  <n>.5  percentages
+s5u <- c("Colorado", "Florida", "Mississippi", "Wyoming")
+s5d <- c("Nebraska", "Pennsylvania")
+UA.C[s5u, "UrbanPop"] <- UA.C[s5u, "UrbanPop"] + 0.5
+UA.C[s5d, "UrbanPop"] <- UA.C[s5d, "UrbanPop"] - 0.5
+```
+
+### Agrupamento
+
+```{r}
+df <- scale(USArrests)
+
+summary(df)
+
+d <- dist(df, method = "maximum")
+grup = hclust(d, method = "ward.D")
+plot(grup, cex = 0.6)
+
+groups <- cutree(grup, k=3)
+groups
+```
+
+```{r}
+km1 = kmeans(df, 4, nstart = 25)
+km1
+```
+
+```{r}
+aggregate(df, by=list(cluster=km1$cluster), mean)
+```
+
+```{r}
+p1 = fviz_cluster(km1, data=df,
+                  palette = c("#2E9FDF", "#FC4E07", "#E7B800", "#E7B700"),
+                  star.plot=FALSE,
+                  # repel=TRUE,
+                  ggtheme=theme_bw(),
+                  main = "Particionamento")
+p1
+```

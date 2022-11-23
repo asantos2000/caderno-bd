@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+<head>
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>Cap. 4 Trabalho final | Caderno de exercícos Mestrado de computação aplicada</title>
+  <meta name="description" content="Caderno de exercício Big Data" />
+  <meta name="generator" content="bookdown 0.30 and GitBook 2.6.7" />
+
+  <meta property="og:title" content="Cap. 4 Trabalho final | Caderno de exercícos Mestrado de computação aplicada" />
+  <meta property="og:type" content="book" />
+  
+  <meta property="og:description" content="Caderno de exercício Big Data" />
+  <meta name="github-repo" content="rstudio/bookdown-demo" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Cap. 4 Trabalho final | Caderno de exercícos Mestrado de computação aplicada" />
+  
+  <meta name="twitter:description" content="Caderno de exercício Big Data" />
+  
+
+<meta name="author" content="Anderson dos Santos" />
+
+
+<meta name="date" content="2022-11-15" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  
+  
+<link rel="prev" href="classification.html"/>
+
+<script src="libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.4.6/dist/fuse.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-clipboard.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+<link href="libs/anchor-sections-1.1.0/anchor-sections.css" rel="stylesheet" />
+<link href="libs/anchor-sections-1.1.0/anchor-sections-hash.css" rel="stylesheet" />
+<script src="libs/anchor-sections-1.1.0/anchor-sections.js"></script>
+<script src="libs/kePrint-0.0.1/kePrint.js"></script>
+<link href="libs/lightable-0.0.1/lightable.css" rel="stylesheet" />
+<script src="libs/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+<script src="libs/plotly-binding-4.10.1/plotly.js"></script>
+<script src="libs/typedarray-0.1/typedarray.min.js"></script>
+<link href="libs/crosstalk-1.2.0/css/crosstalk.min.css" rel="stylesheet" />
+<script src="libs/crosstalk-1.2.0/js/crosstalk.min.js"></script>
+<link href="libs/plotly-htmlwidgets-css-2.11.1/plotly-htmlwidgets.css" rel="stylesheet" />
+<script src="libs/plotly-main-2.11.1/plotly-latest.min.js"></script>
+
+
+<style type="text/css">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">Caderno de BD</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i>Big Data Analytics 2022</a>
+<ul>
+<li class="chapter" data-level="" data-path="index.html"><a href="index.html#organização"><i class="fa fa-check"></i>Organização</a></li>
+</ul></li>
+<li class="chapter" data-level="1" data-path="descriptive.html"><a href="descriptive.html"><i class="fa fa-check"></i><b>1</b> Estatística descritiva</a>
+<ul>
+<li class="chapter" data-level="1.1" data-path="descriptive.html"><a href="descriptive.html#exercício"><i class="fa fa-check"></i><b>1.1</b> Exercício</a></li>
+<li class="chapter" data-level="1.2" data-path="descriptive.html"><a href="descriptive.html#pacotes"><i class="fa fa-check"></i><b>1.2</b> Pacotes</a></li>
+<li class="chapter" data-level="1.3" data-path="descriptive.html"><a href="descriptive.html#conjunto-de-dados"><i class="fa fa-check"></i><b>1.3</b> Conjunto de dados</a></li>
+<li class="chapter" data-level="1.4" data-path="descriptive.html"><a href="descriptive.html#informações-dos-atributos"><i class="fa fa-check"></i><b>1.4</b> Informações dos atributos</a></li>
+<li class="chapter" data-level="1.5" data-path="descriptive.html"><a href="descriptive.html#análise-descritiva-de-algumas-ações"><i class="fa fa-check"></i><b>1.5</b> Análise descritiva de algumas ações</a></li>
+<li class="chapter" data-level="1.6" data-path="descriptive.html"><a href="descriptive.html#avaliando-nubr33"><i class="fa fa-check"></i><b>1.6</b> Avaliando NUBR33</a></li>
+</ul></li>
+<li class="chapter" data-level="2" data-path="regression.html"><a href="regression.html"><i class="fa fa-check"></i><b>2</b> Regressão</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="regression.html"><a href="regression.html#conjunto-de-dados-1"><i class="fa fa-check"></i><b>2.1</b> Conjunto de dados</a></li>
+<li class="chapter" data-level="2.2" data-path="regression.html"><a href="regression.html#preço-das-casas"><i class="fa fa-check"></i><b>2.2</b> Preço das casas</a>
+<ul>
+<li class="chapter" data-level="2.2.1" data-path="regression.html"><a href="regression.html#pacotes-1"><i class="fa fa-check"></i><b>2.2.1</b> Pacotes</a></li>
+<li class="chapter" data-level="2.2.2" data-path="regression.html"><a href="regression.html#conjunto-de-dados-2"><i class="fa fa-check"></i><b>2.2.2</b> Conjunto de dados</a></li>
+<li class="chapter" data-level="2.2.3" data-path="regression.html"><a href="regression.html#descrevendo-os-dados"><i class="fa fa-check"></i><b>2.2.3</b> Descrevendo os dados:</a></li>
+<li class="chapter" data-level="2.2.4" data-path="regression.html"><a href="regression.html#ajustes-de-modelos-lineares-simples"><i class="fa fa-check"></i><b>2.2.4</b> Ajustes de modelos lineares simples</a></li>
+<li class="chapter" data-level="2.2.5" data-path="regression.html"><a href="regression.html#predição"><i class="fa fa-check"></i><b>2.2.5</b> Predição</a></li>
+</ul></li>
+<li class="chapter" data-level="2.3" data-path="regression.html"><a href="regression.html#análise-conjunto-energia"><i class="fa fa-check"></i><b>2.3</b> Análise conjunto energia</a>
+<ul>
+<li class="chapter" data-level="2.3.1" data-path="regression.html"><a href="regression.html#pacotes-2"><i class="fa fa-check"></i><b>2.3.1</b> Pacotes</a></li>
+<li class="chapter" data-level="2.3.2" data-path="regression.html"><a href="regression.html#conjunto-de-dados-3"><i class="fa fa-check"></i><b>2.3.2</b> Conjunto de dados</a></li>
+</ul></li>
+<li class="chapter" data-level="2.4" data-path="regression.html"><a href="regression.html#análise-conjunto-vendas-vs-fontes-de-publidades"><i class="fa fa-check"></i><b>2.4</b> Análise Conjunto vendas vs fontes de publidades</a>
+<ul>
+<li class="chapter" data-level="2.4.1" data-path="regression.html"><a href="regression.html#pacotes-3"><i class="fa fa-check"></i><b>2.4.1</b> Pacotes</a></li>
+<li class="chapter" data-level="2.4.2" data-path="regression.html"><a href="regression.html#conjunto-de-dados-4"><i class="fa fa-check"></i><b>2.4.2</b> Conjunto de dados</a></li>
+</ul></li>
+<li class="chapter" data-level="2.5" data-path="regression.html"><a href="regression.html#análise-conjunto-st-vs-demais-variáveiscredit-score-x-renda-e-outras-v"><i class="fa fa-check"></i><b>2.5</b> Análise conjunto ST vs demais variáveisCREDIT SCORE X RENDA E OUTRAS V</a>
+<ul>
+<li class="chapter" data-level="2.5.1" data-path="regression.html"><a href="regression.html#pacotes-4"><i class="fa fa-check"></i><b>2.5.1</b> Pacotes</a></li>
+<li class="chapter" data-level="2.5.2" data-path="regression.html"><a href="regression.html#conjunto-de-dados-5"><i class="fa fa-check"></i><b>2.5.2</b> Conjunto de dados</a></li>
+</ul></li>
+<li class="chapter" data-level="2.6" data-path="regression.html"><a href="regression.html#consumo-alimentar-médio"><i class="fa fa-check"></i><b>2.6</b> Consumo alimentar médio</a>
+<ul>
+<li class="chapter" data-level="2.6.1" data-path="regression.html"><a href="regression.html#pacotes-5"><i class="fa fa-check"></i><b>2.6.1</b> Pacotes</a></li>
+<li class="chapter" data-level="2.6.2" data-path="regression.html"><a href="regression.html#conjunto-de-dados-6"><i class="fa fa-check"></i><b>2.6.2</b> Conjunto de dados</a></li>
+<li class="chapter" data-level="2.6.3" data-path="regression.html"><a href="regression.html#regressão"><i class="fa fa-check"></i><b>2.6.3</b> Regressão</a></li>
+<li class="chapter" data-level="2.6.4" data-path="regression.html"><a href="regression.html#predição-1"><i class="fa fa-check"></i><b>2.6.4</b> Predição</a></li>
+<li class="chapter" data-level="2.6.5" data-path="regression.html"><a href="regression.html#agrupamento"><i class="fa fa-check"></i><b>2.6.5</b> Agrupamento</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="3" data-path="classification.html"><a href="classification.html"><i class="fa fa-check"></i><b>3</b> Classificação</a>
+<ul>
+<li class="chapter" data-level="3.1" data-path="classification.html"><a href="classification.html#conjunto-de-dados-7"><i class="fa fa-check"></i><b>3.1</b> Conjunto de dados</a></li>
+<li class="chapter" data-level="3.2" data-path="classification.html"><a href="classification.html#inibina-b-como-marcador"><i class="fa fa-check"></i><b>3.2</b> Inibina B como marcador</a>
+<ul>
+<li class="chapter" data-level="3.2.1" data-path="classification.html"><a href="classification.html#pacotes-6"><i class="fa fa-check"></i><b>3.2.1</b> Pacotes</a></li>
+<li class="chapter" data-level="3.2.2" data-path="classification.html"><a href="classification.html#conjunto-de-dados-8"><i class="fa fa-check"></i><b>3.2.2</b> Conjunto de dados</a></li>
+<li class="chapter" data-level="3.2.3" data-path="classification.html"><a href="classification.html#generalized-linear-models"><i class="fa fa-check"></i><b>3.2.3</b> Generalized Linear Models</a></li>
+<li class="chapter" data-level="3.2.4" data-path="classification.html"><a href="classification.html#linear-discriminant-analysis---fisher"><i class="fa fa-check"></i><b>3.2.4</b> Linear Discriminant Analysis - Fisher</a></li>
+<li class="chapter" data-level="3.2.5" data-path="classification.html"><a href="classification.html#bayes"><i class="fa fa-check"></i><b>3.2.5</b> Bayes</a></li>
+<li class="chapter" data-level="3.2.6" data-path="classification.html"><a href="classification.html#decison-tree"><i class="fa fa-check"></i><b>3.2.6</b> Decison tree</a></li>
+<li class="chapter" data-level="3.2.7" data-path="classification.html"><a href="classification.html#svm"><i class="fa fa-check"></i><b>3.2.7</b> SVM</a></li>
+<li class="chapter" data-level="3.2.8" data-path="classification.html"><a href="classification.html#neuralnet"><i class="fa fa-check"></i><b>3.2.8</b> neuralnet</a></li>
+<li class="chapter" data-level="3.2.9" data-path="classification.html"><a href="classification.html#knn"><i class="fa fa-check"></i><b>3.2.9</b> KNN</a></li>
+<li class="chapter" data-level="3.2.10" data-path="classification.html"><a href="classification.html#avaliando-os-modelos"><i class="fa fa-check"></i><b>3.2.10</b> Avaliando os modelos</a></li>
+<li class="chapter" data-level="3.2.11" data-path="classification.html"><a href="classification.html#agrupamento-1"><i class="fa fa-check"></i><b>3.2.11</b> Agrupamento</a></li>
+</ul></li>
+<li class="chapter" data-level="3.3" data-path="classification.html"><a href="classification.html#ultrassom-para-medir-deslocamento-do-disco"><i class="fa fa-check"></i><b>3.3</b> Ultrassom para medir deslocamento do disco</a>
+<ul>
+<li class="chapter" data-level="3.3.1" data-path="classification.html"><a href="classification.html#pacotes-7"><i class="fa fa-check"></i><b>3.3.1</b> Pacotes</a></li>
+<li class="chapter" data-level="3.3.2" data-path="classification.html"><a href="classification.html#conjunto-de-dados-9"><i class="fa fa-check"></i><b>3.3.2</b> Conjunto de dados</a></li>
+<li class="chapter" data-level="3.3.3" data-path="classification.html"><a href="classification.html#generalized-linear-models-1"><i class="fa fa-check"></i><b>3.3.3</b> Generalized Linear Models</a></li>
+<li class="chapter" data-level="3.3.4" data-path="classification.html"><a href="classification.html#linear-discriminant-analysis---fisher-1"><i class="fa fa-check"></i><b>3.3.4</b> Linear Discriminant Analysis - Fisher</a></li>
+<li class="chapter" data-level="3.3.5" data-path="classification.html"><a href="classification.html#bayes-1"><i class="fa fa-check"></i><b>3.3.5</b> Bayes</a></li>
+<li class="chapter" data-level="3.3.6" data-path="classification.html"><a href="classification.html#decison-tree-1"><i class="fa fa-check"></i><b>3.3.6</b> Decison tree</a></li>
+<li class="chapter" data-level="3.3.7" data-path="classification.html"><a href="classification.html#svm-1"><i class="fa fa-check"></i><b>3.3.7</b> SVM</a></li>
+<li class="chapter" data-level="3.3.8" data-path="classification.html"><a href="classification.html#neuralnet-1"><i class="fa fa-check"></i><b>3.3.8</b> neuralnet</a></li>
+<li class="chapter" data-level="3.3.9" data-path="classification.html"><a href="classification.html#knn-1"><i class="fa fa-check"></i><b>3.3.9</b> KNN</a></li>
+<li class="chapter" data-level="3.3.10" data-path="classification.html"><a href="classification.html#avaliando-os-modelos-1"><i class="fa fa-check"></i><b>3.3.10</b> Avaliando os modelos</a></li>
+<li class="chapter" data-level="3.3.11" data-path="classification.html"><a href="classification.html#agrupamento-2"><i class="fa fa-check"></i><b>3.3.11</b> Agrupamento</a></li>
+</ul></li>
+<li class="chapter" data-level="3.4" data-path="classification.html"><a href="classification.html#classificação-de-tipos-faciais"><i class="fa fa-check"></i><b>3.4</b> Classificação de tipos faciais</a>
+<ul>
+<li class="chapter" data-level="3.4.1" data-path="classification.html"><a href="classification.html#pacotes-8"><i class="fa fa-check"></i><b>3.4.1</b> Pacotes</a></li>
+<li class="chapter" data-level="3.4.2" data-path="classification.html"><a href="classification.html#conjunto-de-dados-10"><i class="fa fa-check"></i><b>3.4.2</b> Conjunto de dados</a></li>
+<li class="chapter" data-level="3.4.3" data-path="classification.html"><a href="classification.html#generalized-linear-models-2"><i class="fa fa-check"></i><b>3.4.3</b> Generalized Linear Models</a></li>
+<li class="chapter" data-level="3.4.4" data-path="classification.html"><a href="classification.html#linear-discriminant-analysis---fisher-2"><i class="fa fa-check"></i><b>3.4.4</b> Linear Discriminant Analysis - Fisher</a></li>
+<li class="chapter" data-level="3.4.5" data-path="classification.html"><a href="classification.html#bayes-2"><i class="fa fa-check"></i><b>3.4.5</b> Bayes</a></li>
+<li class="chapter" data-level="3.4.6" data-path="classification.html"><a href="classification.html#decison-tree-2"><i class="fa fa-check"></i><b>3.4.6</b> Decison tree</a></li>
+<li class="chapter" data-level="3.4.7" data-path="classification.html"><a href="classification.html#svm-2"><i class="fa fa-check"></i><b>3.4.7</b> SVM</a></li>
+<li class="chapter" data-level="3.4.8" data-path="classification.html"><a href="classification.html#neuralnet-2"><i class="fa fa-check"></i><b>3.4.8</b> neuralnet</a></li>
+<li class="chapter" data-level="3.4.9" data-path="classification.html"><a href="classification.html#knn-2"><i class="fa fa-check"></i><b>3.4.9</b> KNN</a></li>
+<li class="chapter" data-level="3.4.10" data-path="classification.html"><a href="classification.html#avaliando-os-modelos-2"><i class="fa fa-check"></i><b>3.4.10</b> Avaliando os modelos</a></li>
+<li class="chapter" data-level="3.4.11" data-path="classification.html"><a href="classification.html#agrupamento-3"><i class="fa fa-check"></i><b>3.4.11</b> Agrupamento</a></li>
+</ul></li>
+<li class="chapter" data-level="3.5" data-path="classification.html"><a href="classification.html#análise-do-conjunto-de-dados-usarrests"><i class="fa fa-check"></i><b>3.5</b> Análise do conjunto de dados USArrests</a>
+<ul>
+<li class="chapter" data-level="3.5.1" data-path="classification.html"><a href="classification.html#pacotes-9"><i class="fa fa-check"></i><b>3.5.1</b> Pacotes</a></li>
+<li class="chapter" data-level="3.5.2" data-path="classification.html"><a href="classification.html#conjunto-de-dados-11"><i class="fa fa-check"></i><b>3.5.2</b> Conjunto de dados</a></li>
+<li class="chapter" data-level="3.5.3" data-path="classification.html"><a href="classification.html#agrupamento-4"><i class="fa fa-check"></i><b>3.5.3</b> Agrupamento</a></li>
+</ul></li>
+</ul></li>
+<li class="chapter" data-level="4" data-path="final-work.html"><a href="final-work.html"><i class="fa fa-check"></i><b>4</b> Trabalho final</a>
+<ul>
+<li class="chapter" data-level="4.1" data-path="final-work.html"><a href="final-work.html#fonte-de-dados"><i class="fa fa-check"></i><b>4.1</b> Fonte de dados</a></li>
+<li class="chapter" data-level="4.2" data-path="final-work.html"><a href="final-work.html#introdução"><i class="fa fa-check"></i><b>4.2</b> Introdução</a></li>
+<li class="chapter" data-level="4.3" data-path="final-work.html"><a href="final-work.html#referências"><i class="fa fa-check"></i><b>4.3</b> Referências</a></li>
+</ul></li>
+<li class="divider"></li>
+<li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">Caderno de exercícos Mestrado de computação aplicada</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="final-work" class="section level1 hasAnchor" number="4">
+<h1><span class="header-section-number">Cap. 4</span> Trabalho final<a href="final-work.html#final-work" class="anchor-section" aria-label="Anchor link to header"></a></h1>
+<p>Qual o impacto das decisôes do COMPOM em relação a taxa Selic no índice Bovespa?</p>
+<div id="fonte-de-dados" class="section level2 hasAnchor" number="4.1">
+<h2><span class="header-section-number">4.1</span> Fonte de dados<a href="final-work.html#fonte-de-dados" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<ul>
+<li><a href="https://dados.gov.br/dataset/11-taxa-de-juros-selic/resource/3d751a0d-afb2-452b-83f2-310a201f8a82">Taxa selic</a>: selic.json. selic.csv</li>
+<li><a href="https://finance.yahoo.com/quote/%5EBVSP/history?period1=735868800&amp;period2=1668297600&amp;interval=1d&amp;filter=history&amp;frequency=1d&amp;includeAdjustedClose=true">Índices Bovespa</a>: idc_BVSP_daily.csv, idx_BVSP_monthly.csv</li>
+</ul>
+</div>
+<div id="introdução" class="section level2 hasAnchor" number="4.2">
+<h2><span class="header-section-number">4.2</span> Introdução<a href="final-work.html#introdução" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<p>TODO</p>
+</div>
+<div id="referências" class="section level2 hasAnchor" number="4.3">
+<h2><span class="header-section-number">4.3</span> Referências<a href="final-work.html#referências" class="anchor-section" aria-label="Anchor link to header"></a></h2>
+<ul>
+<li><a href="https://analisemacro.com.br/data-science/analise-das-atas-do-copom-com-text-mining/">Análise das Atas do COPOM com text mining</a></li>
+<li><a href="https://analisemacro.com.br/data-science/mineracao-de-textos-do-copom-criando-um-indicador-de-sentimentos/">Mineração de textos do COPOM: criando um indicador de sentimentos</a></li>
+</ul>
+
+</div>
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+<a href="classification.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/clipboard.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-clipboard.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"whatsapp": false,
+"all": ["facebook", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/USERNAME/REPO/edit/BRANCH/04-final-work.Rmd",
+"text": "Edit"
+},
+"history": {
+"link": null,
+"text": null
+},
+"view": {
+"link": null,
+"text": null
+},
+"download": ["_main.pdf", "_main.epub"],
+"search": {
+"engine": "fuse",
+"options": null
+},
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/latest.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+</body>
+
+</html>

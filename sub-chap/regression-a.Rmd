@@ -1,0 +1,183 @@
+## Preço das casas
+
+Análise descritiva e regressão linear sobre o conjunto de dados Data_HousePrice_Area.xlsx.
+
+### Pacotes
+
+Pacotes necessários para estes exercícios:
+
+```{r warning=FALSE}
+library(readxl)
+library(tidyverse)
+library(readxl)
+library(ggthemes)
+library(plotly)
+library(knitr)
+library(kableExtra)
+```
+
+### Conjunto de dados
+
+```{r}
+dadosCen01 = read_excel("../dados/Data_HousePrice_Area.xlsx", sheet = 1)
+dadosCen02 = read_excel("../dados/Data_HousePrice_Area.xlsx", sheet = 2)
+```
+
+Dados do cenário 01
+
+```{r echo=FALSE}
+kable(dadosCen01) %>%
+  kable_styling(latex_options = "striped")
+```
+
+Dados do cenário 02
+
+```{r echo=FALSE}
+kable(dadosCen02) %>%
+  kable_styling(latex_options = "striped")
+```
+
+No gráfico:
+
+```{r echo=FALSE}
+par(mfrow = c(1,2))
+plot(dadosCen01$`Square Feet` ~ dadosCen01$`House Price`, main='Cenário 01', col = 2, pch = 5, xlab = 'Square Feet', ylab = 'House Price')
+plot(dadosCen02$`Square Feet` ~ dadosCen02$`House Price`, main='Cenário 02', col = 3, pch = 16, xlab = 'Square Feet', ylab = 'House Price')
+```
+
+Comparando os dois gráficos, podemos observar:
+
+-   O primeiro conjunto é mais esparso
+-   O segundo cenário os dados estão agrupados de forma linear
+
+### Descrevendo os dados:
+
+#### Cenário 1
+
+House Price
+
+```{r}
+summary(dadosCen01$`House Price`)
+```
+
+Square Feet
+
+```{r}
+summary(dadosCen01$`Square Feet`)
+```
+
+Distribuição dos valores
+
+```{r}
+hist(dadosCen01$`House Price`)
+```
+
+#### Cenário 2
+
+House Price
+
+```{r}
+summary(dadosCen02$`House Price`)
+```
+
+Square Feet
+
+```{r}
+summary(dadosCen02$`Square Feet`)
+```
+
+Distribuição dos valores
+
+```{r}
+hist(dadosCen01$`House Price`)
+```
+
+### Ajustes de modelos lineares simples
+
+Vamos agora ajustar um modelo de regressão para ambos os cenários.
+
+#### Cenário 01
+
+```{r}
+modelCen01 <- lm(dadosCen01$`Square Feet` ~ dadosCen01$`House Price`)
+modelCen01
+```
+
+$y = 199.034 + 5.291 x$
+
+Cálculo do resíduo:
+
+$y = 199.034 + 5.291 x$ para $x = 1400$, $y = valor$. Diferença entre o y dado e o calculado é o resíduo.
+
+```{r}
+resumoMod01 = summary(modelCen01)
+resumoMod01
+```
+
+$R^2$: `r round(resumoMod01$r.squared, 2)`
+
+
+Vamos analisar os resíduos:
+
+
+```{r}
+plot(modelCen01$residuals ~ dadosCen01$`House Price`)
+```
+
+
+```{r}
+plot(modelCen01, pch = 16, col = "blue")
+
+plot(dadosCen01$`Square Feet` ~ dadosCen01$`House Price`)
+abline(modelCen01) #Add a regression line
+```
+
+Como as observações são mais esparças, um modelo linear simples não se ajusta muito bem.
+
+
+#### Cenário 02
+
+```{r}
+modelCen02 <- lm(dadosCen02$`Square Feet` ~ dadosCen02$`House Price`)
+modelCen02
+```
+
+$y = 186.202 + 5.495 x$
+
+
+```{r}
+plot(modelCen02, pch = 16, col = "blue")
+
+plot(dadosCen02$`Square Feet` ~ dadosCen01$`House Price`)
+abline(modelCen01) #Add a regression line
+```
+
+
+Cálculo do resíduo:
+
+
+$y = 186.202 + 5.495 x$ para $x = 1400$, $y = valor$. Diferença entre o y dado e o calculado é o resíduo.
+
+```{r}
+resumoMod02 = summary(modelCen02)
+resumoMod02
+```
+
+
+$R^2$: `r round(resumoMod02$r.squared, 2)`
+
+Vamos analisar os resíduos:
+
+```{r}
+plot(modelCen02$residuals ~ dadosCen02$`House Price`)
+```
+
+Neste cenário as observações estão mais agrupadas próximas a uma reta, sendo assim o modelo linear simples descreveu melhor as observações.
+
+### Predição
+
+```{r}
+p = predict(modelCen02, newdata = data.frame(x = 1300))
+```
+Usando o modelo um, uma casa de $1300 ft^2$ custaria `r p`
+

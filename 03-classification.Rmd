@@ -1,0 +1,23 @@
+# Classificação {#classification}
+
+A classificação estatística é uma ampla abordagem de aprendizado supervisionado que treina um programa para categorizar informações novas e não rotuladas com base em sua relevância para dados rotulados conhecidos.
+
+A análise de cluster visa segmentar objetos em grupos com membros semelhantes e, portanto, ajuda a descobrir a distribuição de propriedades e correlações em grandes conjuntos de dados.
+
+Os exercícios deste capítulo estão relacionados a esses dois tópicos.
+
+
+## Conjunto de dados
+
+Este conjunto de dados foram criados pela professora Dra.Olga Satomi Yoshida para aula de Big Data no IPT.
+
+1. Inibina: inibina.xlsx
+2. avaliação do deslocamento do disco da articulação temporomandibular: disco.xls
+3. Tipos faciais: tipofacial.xls
+4. Consumo alimentar médio: LABORATORIO-R.pdf (ex 5.)
+
+
+```{r, child=c('sub-chap/classification-a.Rmd', 'sub-chap/classification-b.Rmd', 'sub-chap/classification-c.Rmd', 'sub-chap/classification-f.Rmd')}
+```
+
+

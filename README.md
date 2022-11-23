@@ -1,13 +1,10 @@
-Welcome! 
+# Introdução
 
-This is a minimal example of a book based on R Markdown and **bookdown** (https://github.com/rstudio/bookdown). 
+Curso de Big Data - IPT - Instituto de Pesquisa do Esatdo de São Paulo 
 
-This template provides a skeleton file structure that you can edit to create your book. 
+Mestrado em Computação Aplicada
 
-The contents inside the .Rmd files provide some pointers to help you get started, but feel free to also delete the content in each file and start fresh.
 
-Additional resources:
+## Conteúdo
 
-The **bookdown** book: https://bookdown.org/yihui/bookdown/
-
-The **bookdown** package reference site: https://pkgs.rstudio.com/bookdown
+Caderno em R com exercícios da disciplina de Big Data.

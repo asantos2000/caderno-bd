@@ -1,0 +1,175 @@
+# Estatística descritiva {#descriptive}
+
+Utilizamos métodos de Estatística Descritiva para organizar, resumir e descrever os aspectos importantes de um conjunto de características observadas ou comparar tais características entre dois ou mais conjuntos
+
+## Exercício
+
+Descrever o conjunto de dados da bolsa de valores brasileira (B3)
+
+## Pacotes
+
+Pacotes necessários para executar este capítulo:
+
+```{r warning=FALSE}
+library(readxl)
+library(tidyverse)
+library(readxl)
+library(tibble)
+library(knitr)
+library(kableExtra)
+library(shiny)
+library(dplyr)
+```
+
+
+## Conjunto de dados
+
+Este conjunto de dados de ações da bovespa foi criado pela professora Dra.Olga Satomi Yoshida para aula de Big Data no IPT. 
+
+## Informações dos atributos
+
+Enconta no forma de planilha excel - [03 B2 DADOS Time Series Preços Açoes Diario.xlsx](./dados/03 B2 DADOS Time Series Preços Açoes Diario.xlsx), contém 10 séries com as ações:
+
+- ELET3;
+- ITUB4;
+- ITSA4;
+- PETR4;
+- BBDC4;
+- VALE3;
+- BBAS3;
+- LREN3;
+
+todos para o período de 01/04/2010 à 19/09/2022 e
+
+- NUBR33 período 12/09/2021 a 19/09/2022;
+- MGLU3 perído 05/02/2011 a 19/09/2022.
+
+Os atributos para cada série são a data e valor no fechamento do pregão.
+
+```{r warning=FALSE}
+series = read_excel("dados/03 B1 ESTATISTICAS DESC E REGRESSAO.xlsx",
+                    sheet = 2,
+                    n_max = 1)
+nomes = names(series)[seq(1, 20, 2)]
+series = read_excel("dados/03 B1 ESTATISTICAS DESC E REGRESSAO.xlsx",
+                    sheet = 2,
+                    skip = 1)
+names(series)[seq(1, 20, 2)] = paste0("DATA_", nomes)
+names(series)[seq(2, 20, 2)] = nomes
+
+## Transforma o tipo das colunas de Datetime para Date.
+for (i in seq(1, 20, 2)) {
+  series[[i]] = as.Date(series[[i]])
+}
+
+kable(head(series, 10)) %>%
+  kable_styling(latex_options = "striped")
+```
+
+## Análise descritiva de algumas ações
+
+```{r warning=FALSE}
+plot(x=series$DATA_ELET3, y= series$ELET3, type = "l", xlab = "Tempo (dias)", ylab = "Preço fechamento (R$)",  main = "Performance de algumas ações ao longo do tempo", ylim = c(0, 60) )
+lines(x=series$DATA_ITUB4, y= series$ITUB4, col = 2)
+lines(x=series$DATA_PETR4, y= series$PETR4, col = 3)
+lines(x=series$DATA_NUBR33, y= series$NUBR33, col = 4)
+legend("top", legend = c("ELET3", "ITUB4", "PETR4", "NUBR33"), fill = c(1,2,3,4))
+```
+> NUBR33 tem uma série menor que as demais ações.
+
+Parâmetros
+
+```{r}
+stock_symbols = c("ELET3","ITUB4","ITSA4","PETR4","NUBR33","MGLU3","BBDC4","VALE3","BBAS3","LREN3")
+stock_symbol = 5 # 1 a 10
+dataInicial = NULL # as.Date("2022-01-01")
+dataFinal = NULL # as.Date("2022-12-31")
+```
+
+## Avaliando `r stock_symbols[stock_symbol]`
+
+```{r}
+symbol_series = series %>%
+  dplyr::select(matches(stock_symbols[stock_symbol]) )
+
+names(symbol_series)[1] = "stock_date"
+names(symbol_series)[2] = "stock_value"
+
+if (is.null(dataInicial)) {
+  dataInicial = min(symbol_series$stock_date, na.rm = TRUE)
+}
+
+if (is.null(dataFinal)) {
+  dataFinal = max(symbol_series$stock_date, na.rm = TRUE)
+}
+
+subConjunto = filter(symbol_series, stock_date >= dataInicial & stock_date <= dataFinal)
+
+Data = subConjunto$stock_date
+Ser = subConjunto$stock_value
+
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+cont = count(subConjunto)
+menor = min(Ser)
+maior = max(Ser)
+p = quantile(Ser, c(.025, .10, .25, .50, .75, .90, .975)) 
+media = mean(Ser, na.rm = T)
+desvio = sd(Ser, na.rm = T)
+mediana = median(Ser, na.rm = T)
+moda = getmode(Ser)
+ep = desvio / sqrt(cont)
+periodo = dataFinal - dataInicial
+```
+
+
+Medidas de posição:
+
+1.	Contagem de resultados `r cont`
+2.	Menor valor: `r menor`
+3.	Percentil: `r p`
+4.	Maior valor: `r maior`
+
+
+Medidas de tendência central:
+
+5.	Moda: `r moda`
+6.	Mediana: `r mediana`
+7.	Média dos resultados: `r media`
+
+Medidas de dispersão dos dados individuais em relação a média:
+
+8.	desvio padrão dos resultados em relação a média: `r desvio`
+9.	coeficiente de variação = d.p. / média: `r desvio / media`
+10.	c.v. % = (d.p. / média ) x 100 %: `r (desvio / media) * 100`
+
+Medidas de disperção da média:
+
+11.	e.p. = d.p. da média = d.p. / Raiz(n): `r ep`
+12.	c.v.e.p. = e.p. / média: `r ep / media`
+13.	c.v.e.p.% = (e.p. / média) x 100 %: `r (ep / media) * 100`
+
+Para `r stock_symbols[stock_symbol]` o preço médio da ação, no período de `r dataInicial` a `r dataFinal` (período de `r periodo` dias) é de `r media` e o desvio padrão de `r desvio`.
+
+
+```{r}
+plot(subConjunto, type = "l", xlab = "Tempo (dias)", ylab = "Preço fechamento (R$)", main=stock_symbols[stock_symbol])
+caixa = boxplot(Ser, add = T)
+limSup = caixa$stats[5,1]
+Q3 = caixa$stats[4,1]
+Q2 = caixa$stats[3,1]
+Q1 = caixa$stats[2,1]
+limInf = caixa$stats[1,1]
+abline(h = Q2, col = "black")
+abline(h = Q3, col = "red", lwd = 2)
+abline(h = Q1, col = "red", lwd = 2)
+abline(h = limSup, col = "green", lwd = 2)
+abline(h = limInf, col = "green", lwd = 2)
+legend("top", legend = c("Sup", "Q3", "Q2", "Q1", "Inf"), fill = c("green","red","black","red","green"))
+```
+
+> Usando boxplot para obter limites e percentíls.
+

@@ -1,0 +1,285 @@
+## Ultrassom para medir deslocamento do disco
+
+Os dados disponíveis aqui foram extraídos de um estudo realizado no Hospital Universitário da Universidade de São Paulo com o objetivo de avaliar se algumas medidas obtidas ultrassonograficamente poderiam ser utilizadas como substitutas de medidas obtidas por métodos de ressonância magnética, considerada como padrão ouro para avaliação do deslocamento do disco da articulação temporomandibular (referido simplesmente como disco).
+
+### Pacotes
+
+Pacotes necessários para estes exercícios:
+
+```{r warning=FALSE}
+library(readxl)
+library(tidyverse)
+library(readxl)
+library(ggthemes)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(rpart)
+library(rpart.plot)
+library(caret)
+library(MASS)
+library(httr)
+library(readxl)
+library(tibble)
+library(e1071)
+library(neuralnet)
+library(factoextra)
+library(ggpubr)
+```
+
+### Conjunto de dados
+
+```{r}
+#GET("http://www.ime.usp.br/~jmsinger/MorettinSinger/disco.xls", write_disk(tf <- tempfile(fileext = ".xls")))
+httr::GET("http://www.ime.usp.br/~jmsinger/MorettinSinger/disco.xls", httr::write_disk("../dados/disco.xls", overwrite = TRUE))
+
+disco <- read_excel("../dados/disco.xls")
+str(disco)
+```
+
+Número de observações `r nrow(disco)`.
+
+#### Categorizando a variável de deslocamento.
+
+```{r}
+disco$sumdistancia = disco$distanciaA + disco$distanciaF
+disco$deslocamento = as.factor(disco$deslocamento)
+```
+
+```{r}
+plot(disco$sumdistancia  ~ disco$deslocamento)
+print(disco, n = 32)
+```
+
+```{r}
+summary(disco)
+sd(disco$sumdistancia)
+```
+
+Criando um dataframe para comparar as métricas dos modelos.
+
+```{r}
+model_eval <- data.frame(matrix(ncol = 5, nrow = 0))
+
+colnames(model_eval) <- c('Model', 'Algorithm', 'Accuracy', 'Sensitivity', 'Specificity')
+```
+
+
+### Generalized Linear Models
+
+```{r}
+modLogist01 = glm(deslocamento ~ sumdistancia, family = binomial, data = disco)
+summary(modLogist01)
+```
+
+```{r}
+predito = predict.glm(modLogist01, type = "response")
+classPred = ifelse(predito>0.5, "0", "1")
+classPred = as.factor(classPred)
+cm = confusionMatrix(classPred, disco$deslocamento, positive = "0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modLogist01", "glm", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+Validação cruzada leave-one-out
+
+
+```{r}
+
+trControl <- trainControl(method = "LOOCV")
+
+modLogist02 <- train(deslocamento ~ sumdistancia, method = "glm", data = disco, family = binomial,
+                     trControl = trControl, metric = "Accuracy")
+summary(modLogist02)
+
+predito = predict(modLogist02, newdata = disco)
+
+classPred = as.factor(predito)
+
+cm = confusionMatrix(classPred, disco$deslocamento, positive = "0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modLogist02-LOOCV", "glm", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+```{r}
+kable(model_eval) %>%
+  kable_styling(latex_options = "striped")
+```
+
+
+Treinar o modelo com o método LOOCV melhorou consideravelmente todas as métricas do modelo.
+
+### Linear Discriminant Analysis - Fisher
+
+```{r}
+modFisher01 = lda(deslocamento ~ sumdistancia, data = disco, prior = c(0.5, 0.5))
+predito = predict(modFisher01)
+classPred = predito$class
+cm = confusionMatrix(classPred, disco$deslocamento, positive = "0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modFisher01-prior 0.5 / 0.5", "lda", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+### Bayes
+
+```{r}
+modBayes01 = lda(deslocamento ~ sumdistancia, data = disco, prior = c(0.65, 0.35))
+predito = predict(modBayes01)
+classPred = predito$class
+cm = confusionMatrix(classPred, disco$deslocamento, positive = "0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modBayes01-prior 0.65 / 0.35", "lda", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+```{r}
+table(classPred)
+print(disco, n = 32)
+```
+
+Naive Bayes
+
+```{r}
+modNaiveBayes01 = naiveBayes(deslocamento ~ sumdistancia, data = disco)
+predito = predict(modNaiveBayes01, disco)
+cm = confusionMatrix(predito, disco$deslocamento, positive = "0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modNaiveBayes01", "naiveBayes", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+### Decison tree
+
+```{r}
+modArvDec01 = rpart(deslocamento ~ sumdistancia, data = disco) 
+prp(modArvDec01,  faclen=0, #use full names for factor labels
+    extra=1, #display number of observations for each terminal node
+    roundint=F, #don't round to integers in output
+    digits=5)
+
+predito = predict(modArvDec01, type = "class")
+cm = confusionMatrix(predito, disco$deslocamento, positive = "0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modArvDec01", "rpart", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+```{r}
+x = 1:nrow(disco)
+plot(disco$sumdistancia ~ x, col = disco$deslocamento)
+```
+
+### SVM
+
+```{r}
+modSVM01 = svm(deslocamento ~ sumdistancia, data = disco, kernel = "linear")
+predito = predict(modSVM01, type = "class")
+cm = confusionMatrix(predito, disco$deslocamento, positive = "0")
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modSVM01", "svm", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+### neuralnet
+
+```{r}
+modRedNeural01 = neuralnet(deslocamento ~ sumdistancia, data = disco, hidden = c(2,4,3))
+plot(modRedNeural01)
+
+ypred = neuralnet::compute(modRedNeural01, disco)
+yhat = ypred$net.result
+
+round(yhat)
+
+yhat=data.frame("yhat"=ifelse(max.col(yhat[ ,1:2])==1, "0", "1"))
+
+cm = confusionMatrix(disco$deslocamento, as.factor(yhat$yhat))
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modRedNeural01", "neuralnet", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+### KNN
+
+```{r}
+modKnn1_01 = knn3(deslocamento ~ sumdistancia, data = disco, k = 1)
+predito = predict(modKnn1_01, disco, type = "class")
+cm = confusionMatrix(predito, disco$deslocamento, positive = "0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modKnn1_01-k=1", "knn3", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+k = 3
+
+```{r}
+modKnn3_01 = knn3(deslocamento ~ sumdistancia, data = disco, k = 3)
+predito = predict(modKnn3_01, disco, type = "class")
+cm = confusionMatrix(predito, disco$deslocamento, positive = "0")
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modKnn3_01-k=3", "knn3", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+
+k = 5
+
+```{r}
+modKnn5_01 = knn3(deslocamento ~ sumdistancia, data = disco, k = 5)
+predito = predict(modKnn5_01, disco, type = "class")
+cm = confusionMatrix(predito, disco$deslocamento, positive = "0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modKnn5_01-k=5", "knn3", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
+```
+### Avaliando os modelos
+
+```{r echo=FALSE}
+kable(model_eval) %>%
+  kable_styling(latex_options = "striped")
+```
+
+Todos os modelos tiveram performance semelhante, com destaque para modFisher01 com $prior 0.5, 0.5$.
+
+### Agrupamento
+
+```{r}
+discoS = disco[, 2:3]
+
+d <- dist(discoS, method = "maximum")
+grup = hclust(d, method = "ward.D")
+plot(grup, cex = 0.6)
+
+groups <- cutree(grup, k=3)
+```
+
+```{r}
+table(groups, disco$deslocamento)
+```
+
+
+```{r}
+km1 = kmeans(discoS, 4)
+p1 = fviz_cluster(km1, data=discoS,
+                  palette = c("#2E9FDF", "#FC4E07", "#E7B800", "#E7B700"),
+                  star.plot=FALSE,
+                  # repel=TRUE,
+                  ggtheme=theme_bw())
+p1
+```
+
+```{r}
+groups = km1$cluster
+table(groups, disco$deslocamento)
+```

@@ -1,0 +1,101 @@
+## Análise Conjunto vendas vs fontes de publidades
+
+Análise descritiva e regressão linear sobre o conjunto de dados SALES_X_YOUTUBE em DadosAula06.xlsx.
+
+### Pacotes
+
+Pacotes necessários para estes exercícios:
+
+```{r warning=FALSE}
+library(readxl)
+library(tidyverse)
+library(readxl)
+library(ggthemes)
+library(plotly)
+library(knitr)
+library(kableExtra)
+```
+
+### Conjunto de dados
+
+```{r carregaDados03, results=FALSE, warning=FALSE, message=FALSE}
+dados03 = read_excel(path = "../dados/04_LABORATORIO REGRESSAO COM DADOS 03_DADOS.xlsx", sheet = 3)
+dados03 = dados03[,2:5]
+# tail(dados03, 3)
+
+# dados03_t =  pivot_longer(dados03, c(2:5))
+# names(dados03_t) = c("Indice", "Grupo", "Valor")
+kable(dados03) %>%
+  kable_styling(latex_options = "striped")
+
+```
+Vendas em relação aos anúncios no youtube.
+
+```{r graficoGgplot03a, echo=FALSE}
+
+p = ggplot(dados03, aes(y= `sales`, x = `youtube`)) + 
+    geom_point() +
+    theme_economist() +
+    # stat_summary(fun.data=mean_cl_boot) +
+    geom_smooth(method='loess', span = 0.4) +
+    labs(title="VENDAS EM RELAÇÃO A ANÚNCIOS NO YOUTUBE", y="Vendas (U$)", x = "Youtube (U$)") 
+p
+```
+
+
+
+```{r graficoGgplot03b, echo=FALSE}
+dados03_mod = cbind(dados03, logYou = log(dados03$youtube), sqrtYou = dados03$youtube^(1/2))
+
+p2 = ggplot(dados03_mod, aes(y= `sales`, x = sqrtYou)) + 
+    geom_point() +
+    theme_economist() +
+    # stat_summary(fun.data=mean_cl_boot) +
+    geom_smooth(method='loess', span = 0.4)
+p2
+
+p1 = ggplot(dados03_mod, aes(y= `sales`, x = logYou)) + 
+    geom_point() +
+    theme_economist() +
+    # stat_summary(fun.data=mean_cl_boot) +
+    geom_smooth(method='loess', span = 0.4)
+p1
+```
+
+Ajustando um modelo linear simples
+
+```{r}
+model = lm(sales ~ sqrtYou, data = dados03_mod)
+summary(model)
+```
+O gráfico mostra as observações em relação ao modelo.
+
+```{r}
+plot(sales ~ sqrtYou, data = dados03_mod)
+abline(model)
+```
+Analisando os resíduos.
+
+```{r}
+plot(model)
+```
+
+Ajustando o modelo a mais variáveis (multiclass).
+
+
+```{r}
+modelMult = lm(sales ~ youtube + facebook + newspaper, data = dados03)
+summary(modelMult)
+plot(modelMult)
+```
+
+
+
+Newspaper tem pouca influência no modelo, sendo o youtube a que mais influência nas vendas.
+
+```{r}
+modelMult2 = lm(sales ~ youtube + facebook, data = dados03)
+summary(modelMult2)
+
+plot(modelMult2)
+```

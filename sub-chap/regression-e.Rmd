@@ -1,0 +1,122 @@
+## Consumo alimentar médio
+
+Análise descritiva e regressão linear.
+
+### Pacotes
+
+Pacotes necessários para estes exercícios:
+
+```{r warning=FALSE}
+library(readxl)
+library(tidyverse)
+library(readxl)
+library(ggthemes)
+library(plotly)
+library(knitr)
+library(kableExtra)
+library(factoextra)
+```
+
+### Conjunto de dados
+
+Considere os dados a seguir do consumo alimentar médio de diferentes tipos de alimentos para famílias classificadas de acordo com o número de filhos (2, 3, 4 ou 5) e principal área de trabalho (MA: Setor de Trabalho Manual, EM: Empregados do Setor Público ou CA: Cargos Administrativos).
+
+Fonte: LABORATORIO-R.pdf
+
+
+```{r results=FALSE, warning=FALSE, message=FALSE}
+dados = tibble(AreaTrabalho = as.factor(rep(c("MA", "EM", "CA"), 4)),
+               Filhos = as.factor(rep(2:5, each = 3)),
+               Paes = c(332, 293, 372, 406, 386, 438, 534, 460, 385, 655, 584, 515),
+               Vegetais = c(428, 559, 767, 563, 608, 843, 660, 699, 789, 776, 995, 1097),
+               Frutas = c(354, 388, 562, 341, 396, 689, 367, 484, 621, 423, 548, 887),
+               Carnes = c(1437,1527,1948,1507,1501,2345,1620,1856,2366,1848,2056,2630),
+               Aves = c(526, 567, 927, 544, NA, 1148,638, 762, 1149,759, 893, 1167),
+               Leite = c(247, 239, 235, 324, 319, 243, 414, 400, 304, 495, 518, 561),
+               Alcoolicos = c(427, 258, 433, 407, 363, 341, 407, 416, 282, 486, 319, 284))
+
+kable(dados) %>%
+  kable_styling(latex_options = "striped")
+```
+
+### Regressão
+
+```{r results=TRUE, warning=FALSE, message=FALSE}
+#dummy <- dummyVars(" ~ .", data=dados)
+#dadosS <- data.frame(predict(dummy, newdata = dados))
+dadosS = subset(dados, select=c("Aves", "Filhos", "Paes", "Vegetais", "Frutas", "Carnes", "Leite", "Alcoolicos"))
+
+#modelo  = lm(dadosS$Aves ~ dadosS$AreaTrabalho.CA + dadosS$AreaTrabalho.EM + dadosS$AreaTrabalho.MA + dadosS$Filhos.2 + dadosS$Filhos.3 + dadosS$Filhos.4 + dadosS$Filhos.5 + dadosS$Paes + dadosS$Vegetais + dadosS$Frutas + dadosS$Carnes + dadosS$Leite + dadosS$Alcoolicos)
+
+modelo  = lm(Aves ~ Filhos + Paes + Vegetais + Frutas + Carnes + Leite + Alcoolicos, data = dadosS)
+
+valoresPredito = predict.lm(modelo, type = "response")
+summary(modelo)
+confint(modelo)
+```
+
+```{r}
+rse = sigma(modelo)/mean(dadosS$Aves, na.rm = TRUE)
+rse
+```
+
+
+```{r}
+plot(dadosS, pch = 16, col = "blue") #Plot the results
+plot(modelo$residuals, pch = 16, col = "red")
+```
+
+Verificando modelo
+
+```{r}
+library(performance)
+
+check_model(modelo)
+```
+
+
+### Predição
+
+```{r}
+predict(modelo, interval = "prediction")
+p = predict.lm(modelo, newdata = data.frame(Filhos = as.factor(3), Paes = 386, Vegetais = 608, Frutas = 396, Carnes = 1501, Leite = 319, Alcoolicos = 363))
+p
+```
+
+O valor da Ave na linha 5 é `r p`
+
+Ajustando o conjunto de dados:
+
+```{r}
+# Antes ajuste
+dados[5, ]
+
+dados[5, ]['Aves'] = p
+
+# Depois ajuste
+dados[5, ]
+```
+
+
+### Agrupamento
+
+```{r}
+dadosS = subset(dados, select=c("Paes", "Vegetais", "Frutas", "Carnes", "Aves", "Leite", "Alcoolicos"))
+
+d <- dist(dadosS, method = "maximum")
+grup = hclust(d, method = "ward.D")
+plot(grup, cex = 0.6)
+
+groups <- cutree(grup, k=3)
+table(groups, dados$Aves)
+```
+
+```{r}
+km1 = kmeans(dadosS, 3)
+p1 = fviz_cluster(km1, data=dadosS,
+                  palette = c("#2E9FDF", "#FC4E07", "#E7B800", "#E7B700"),
+                  star.plot=FALSE,
+                  # repel=TRUE,
+                  ggtheme=theme_bw())
+p1
+```
