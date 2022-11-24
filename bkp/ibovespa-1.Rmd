@@ -4,6 +4,20 @@ output: html_document
 date: "2022-11-23"
 ---
 
+# As decisões do copom e o índice Ibovespa
+
+## Referências
+
+EID JÚNIOR, William. As decisões do Copom e o Índice Bovespa. 2012.
+https://pesquisa-eaesp.fgv.br/publicacoes/gvp/decisoes-do-copom-e-o-indice-bovespa
+https://bibliotecadigital.fgv.br/dspace/handle/10438/14401
+
+https://bpiconsultoria.com/2018/08/29/qual-a-influencia-da-taxa-selic-na-bolsa/
+
+https://www.moneytimes.com.br/tempo-real-acompanhe-o-ibovespa-ibov-nesta-quarta-feira/
+
+https://lume.ufrgs.br/handle/10183/83565
+
 ```{r}
 library(quantmod)
  
@@ -111,6 +125,352 @@ Você já deve ter escutado no jornal sobre o Ibovespa. Esse é o principal índ
 ### Moedas e Criptomoedas
 As moedas e as criptomoedas também são modalidades de investimento de renda variável. Quando você compra dólares, por exemplo, com expectativa de valorização é uma aplicação financeira. Isso ocorre tanto em moedas estrangeiras, quanto em moedas virtuais como os Bitcoins.
 
+---
+
+## Resampling
+
+Resampling is an important operation on financial time series data. Usually this takes the form of downsampling, meaning that, for example, a tick data series is resampled to one-minute intervals or a time series with daily observations is resampled to one with weekly or monthly observations (as shown in Figure 8-4):
+
+```python
+In [22]: data.resample('1w', label='right').last().head()  #1
+Out[22]:
+                   AAPL.O  MSFT.O  INTC.O  AMZN.O    GS.N     SPY     .SPX   .VIX  \
+    Date
+    2010-01-03        NaN     NaN     NaN     NaN     NaN     NaN      NaN    NaN
+    2010-01-10  30.282827   30.66   20.83  133.52  174.31  114.57  1144.98  18.13
+    2010-01-17  29.418542   30.86   20.80  127.14  165.21  113.64  1136.03  17.91
+    2010-01-24  28.249972   28.96   19.91  121.43  154.12  109.21  1091.76  27.31
+    2010-01-31  27.437544   28.18   19.40  125.41  148.72  107.39  1073.87  24.62
+
+                  EUR=     XAU=    GDX     GLD
+    Date
+    2010-01-03  1.4323  1096.35    NaN     NaN
+    2010-01-10  1.4412  1136.10  49.84  111.37
+    2010-01-17  1.4382  1129.90  47.42  110.86
+    2010-01-24  1.4137  1092.60  43.79  107.17
+    2010-01-31  1.3862  1081.05  40.72  105.96
+
+In [23]: data.resample('1m', label='right').last().head()  #2
+Out[23]:
+                   AAPL.O   MSFT.O  INTC.O  AMZN.O    GS.N       SPY     .SPX  \
+    Date
+    2010-01-31  27.437544  28.1800   19.40  125.41  148.72  107.3900  1073.87
+    2010-02-28  29.231399  28.6700   20.53  118.40  156.35  110.7400  1104.49
+    2010-03-31  33.571395  29.2875   22.29  135.77  170.63  117.0000  1169.43
+    2010-04-30  37.298534  30.5350   22.84  137.10  145.20  118.8125  1186.69
+    2010-05-31  36.697106  25.8000   21.42  125.46  144.26  109.3690  1089.41
+
+                 .VIX    EUR=     XAU=    GDX      GLD
+    Date
+    2010-01-31  24.62  1.3862  1081.05  40.72  105.960
+    2010-02-28  19.50  1.3625  1116.10  43.89  109.430
+    2010-03-31  17.59  1.3510  1112.80  44.41  108.950
+    2010-04-30  22.05  1.3295  1178.25  50.51  115.360
+    2010-05-31  32.07  1.2305  1215.71  49.86  118.881
+
+In [24]: rets.cumsum().apply(np.exp). resample('1m', label='right').last(
+                                   ).plot(figsize=(10, 6));  #3
+
+# Captura de tela 2022-11-24 174510.jpg
+```
+
+1 EOD data gets resampled to weekly time intervals …
+2 … and monthly time intervals.
+3 This plots the cumulative log returns over time: first, the cumsum() method is called, then np.exp() is applied to the results; finally, the resampling takes place.
+
+> AVOIDING FORESIGHT BIAS
+> When resampling, pandas takes by default in many cases the left label (or index value) of the interval. To be financially consistent, make sure to use the right label (index value) and in general the last available data point in the interval. Otherwise, a foresight bias might sneak into the financial analysis.3
+> 3 Foresight bias—or, in its strongest form, perfect foresight—means that at some point in the financial analysis, data is used that only becomes available at a later point. The result might be “too good” results, for example, when backtesting a trading strategy.
+
+## Rolling Statistics
+
+It is financial tradition to work with rolling statistics, often also called financial indicators or financial studies. Such rolling statistics are basic tools for financial chartists and technical traders, for example. This section works with a single financial time series only:
+
+```python
+In [25]: sym = 'AAPL.O'
+
+In [26]: data = pd.DataFrame(data[sym]).dropna()
+
+In [27]: data.tail()
+Out[27]:             AAPL.O
+         Date
+         2018-06-25  182.17
+         2018-06-26  184.43
+         2018-06-27  184.16
+         2018-06-28  185.50
+         2018-06-29  185.11
+```
+
+### An Overview
+
+It is straightforward to derive standard rolling statistics with pandas:
+
+````python
+In [28]: window = 20  #1
+
+In [29]: data['min'] = data[sym].rolling(window=window).min()  #2
+
+In [30]: data['mean'] = data[sym].rolling(window=window).mean()  #3
+
+In [31]: data['std'] = data[sym].rolling(window=window).std()  #4
+
+In [32]: data['median'] = data[sym].rolling(window=window).median()  #5
+
+In [33]: data['max'] = data[sym].rolling(window=window).max()  #6
+
+In [34]: data['ewma'] = data[sym].ewm(halflife=0.5, min_periods=window).mean()  #7
+
+
+```
+
+1 Defines the window; i.e., the number of index values to include.
+2 Calculates the rolling minimum value.
+3 Calculates the rolling mean value.
+4 Calculates the rolling standard deviation.
+5 Calculates the rolling median value.
+6 Calculates the rolling maximum value.
+7 Calculates the exponentially weighted moving average, with decay in terms of a half life of 0.5.
+
+To derive more specialized financial indicators, additional packages are generally needed (see, for instance, the financial plots with Cufflinks in “Interactive 2D Plotting”). Custom ones can also easily be applied via the apply() method.
+
+The following code shows a subset of the results and visualizes a selection of the calculated rolling statistics (see Figure 8-5):
+
+```python
+In [35]: data.dropna().head()
+Out[35]:
+                   AAPL.O        min       mean       std     median        max  \
+    Date
+    2010-02-01  27.818544  27.437544  29.580892  0.933650  29.821542  30.719969
+    2010-02-02  27.979972  27.437544  29.451249  0.968048  29.711113  30.719969
+    2010-02-03  28.461400  27.437544  29.343035  0.950665  29.685970  30.719969
+    2010-02-04  27.435687  27.435687  29.207892  1.021129  29.547113  30.719969
+    2010-02-05  27.922829  27.435687  29.099892  1.037811  29.419256  30.719969
+
+                     ewma
+    Date
+    2010-02-01  27.805432
+    2010-02-02  27.936337
+    2010-02-03  28.330134
+    2010-02-04  27.659299
+    2010-02-05  27.856947
+
+In [36]: ax = data[['min', 'mean', 'max']].iloc[-200:].plot(
+              figsize=(10, 6), style=['g--', 'r--', 'g--'], lw=0.8)  #1
+         data[sym].iloc[-200:].plot(ax=ax, lw=2.0);  #2
+         
+# Captura de tela 2022-11-24 173410.jpg
+```
+
+1 Plots three rolling statistics for the final 200 data rows.
+2 Adds the original time series data to the plot.
+
+### A Technical Analysis Example
+
+Rolling statistics are a major tool in the so-called technical analysis of stocks, as compared to the fundamental analysis which focuses, for instance, on financial reports and the strategic positions of the company whose stock is being analyzed.
+
+A decades-old trading strategy based on technical analysis is using two simple moving averages (SMAs). The idea is that the trader should go long on a stock (or financial instrument in general) when the shorter-term SMA is above the longer-term SMA and should go short when the opposite holds true. The concepts can be made precise with pandas and the capabilities of the DataFrame object.
+
+Rolling statistics are generally only calculated when there is enough data given the window parameter specification. As Figure 8-6 shows, the SMA time series only start at the day for which there is enough data given the specific parameterization:
+
+````python
+In [37]: data['SMA1'] = data[sym].rolling(window=42).mean()  #1
+
+In [38]: data['SMA2'] = data[sym].rolling(window=252).mean()  #2
+
+In [39]: data[[sym, 'SMA1', 'SMA2']].tail()
+Out[39]:             AAPL.O        SMA1        SMA2
+         Date
+         2018-06-25  182.17  185.606190  168.265556
+         2018-06-26  184.43  186.087381  168.418770
+         2018-06-27  184.16  186.607381  168.579206
+         2018-06-28  185.50  187.089286  168.736627
+         2018-06-29  185.11  187.470476  168.901032
+
+In [40]: data[[sym, 'SMA1', 'SMA2']].plot(figsize=(10, 6));  #3
+
+# Captura de tela 2022-11-24 173638.jpg
+```
+
+1 Calculates the values for the shorter-term SMA.
+2 Calculates the values for the longer-term SMA.
+3 Visualizes the stock price data plus the two SMA time series.
+
+In this context, the SMAs are only a means to an end. They are used to derive positions to implement a trading strategy. Figure 8-7 visualizes a long position by a value of 1 and a short position by a value of -1. The change in the position is triggered (visually) by a crossover of the two lines representing the SMA time series:
+
+```python
+In [41]: data.dropna(inplace=True)  #1
+
+In [42]: data['positions'] = np.where(data['SMA1'] > data['SMA2'],  #2
+                                      1,  #3
+                                      -1)  #4
+
+In [43]: ax = data[[sym, 'SMA1', 'SMA2', 'positions']].plot(figsize=(10, 6),
+                                                       secondary_y='positions')
+         ax.get_legend().set_bbox_to_anchor((0.25, 0.85));
+         
+# Captura de tela 2022-11-24 173806.jpg
+```
+
+The trading strategy implicitly derived here only leads to a few trades per se: only when the position value changes (i.e., a crossover happens) does a trade take place. Including opening and closing trades, this would add up to just six trades in total.
+
+## Análise de correlação
+
+Considere o caso do índice de ações S&P 500 e o índice de volatilidade VIX. É um fato estilizado que quando o S&P 500 sobe, o VIX cai em geral e vice-versa. Trata-se de correlação e não causalidade. Esta seção mostra como apresentar algumas evidências estatísticas de suporte para o fato estilizado de que o S&P 500 e o VIX são (altamente) negativamente correlacionados.
+
+> 4 - Uma razão por trás disso é que quando o índice de ações cai – durante uma crise, por exemplo – o volume de negócios sobe e, com isso, também a volatilidade. Quando o índice de ações está em alta, os investidores geralmente ficam calmos e não veem muito incentivo para negociar pesadamente. Em particular, os investidores long-only tentam aproveitar ainda mais a tendência.[Python for Finance, 2nd Edition](https://learning.oreilly.com/library/view/python-for-finance/9781492024323/)
+
+```python
+In [44]: raw = pd.read_csv('../../source/tr_eikon_eod_data.csv',
+                          index_col=0, parse_dates=True)  1
+
+In [45]: data = raw[['.SPX', '.VIX']].dropna()
+
+In [46]: data.tail()
+Out[46]:                .SPX   .VIX
+         Date
+         2018-06-25  2717.07  17.33
+         2018-06-26  2723.06  15.92
+         2018-06-27  2699.63  17.91
+         2018-06-28  2716.31  16.85
+         2018-06-29  2718.37  16.09
+
+In [47]: data.plot(subplots=True, figsize=(10, 6));
+
+# Captura de tela 2022-11-24 170627.jpg
+
+In [48]: data.loc[:'2012-12-31'].plot(secondary_y='.VIX', figsize=(10, 6));  1
+
+# Captura de tela 2022-11-24 170813.jpg
+
+```
+### Logarithmic Returns
+
+As pointed out earlier, statistical analysis in general relies on returns instead of absolute changes or even absolute values. Therefore, we’ll calculate log returns first before any further analysis takes place. Figure 8-10 shows the high variability of the log returns over time. For both indices so-called “volatility clusters” can be spotted. In general, periods of high volatility in the stock index are accompanied by the same phenomena in the volatility index:
+
+```python
+In [49]: rets = np.log(data / data.shift(1))
+
+In [50]: rets.head()
+Out[50]:                 .SPX      .VIX
+         Date
+         2010-01-04       NaN       NaN
+         2010-01-05  0.003111 -0.035038
+         2010-01-06  0.000545 -0.009868
+         2010-01-07  0.003993 -0.005233
+         2010-01-08  0.002878 -0.050024
+
+In [51]: rets.dropna(inplace=True)
+
+In [52]: rets.plot(subplots=True, figsize=(10, 6));
+
+# Captura de tela 2022-11-24 171057.jpg
+```
+
+In such a context, the pandas scatter_matrix() plotting function comes in handy for visualizations. It plots the log returns of the two series against each other, and one can add either a histogram or a kernel density estimator (KDE) on the diagonal (see Figure 8-11):
+
+```python
+In [53]: pd.plotting.scatter_matrix(rets,  #1
+                                    alpha=0.2,  #2
+                                    diagonal='hist',  #3
+                                    hist_kwds={'bins': 35},  #4
+                                    figsize=(10, 6));
+
+# Captura de tela 2022-11-24 171315.jpg
+```
+
+1 The data set to be plotted.
+2 The alpha parameter for the opacity of the dots.
+3 What to place on the diagonal; here: a histogram of the column data.
+4 Keywords to be passed to the histogram plotting function.
+
+### OLS Regression
+
+With all these preparations, an ordinary least-squares (OLS) regression analysis is convenient to implement. Figure 8-12 shows a scatter plot of the log returns and the linear regression line through the cloud of dots. The slope is obviously negative, providing support for the stylized fact about the negative correlation between the two indices:
+
+```python
+In [54]: reg = np.polyfit(rets['.SPX'], rets['.VIX'], deg=1)  #1
+
+In [55]: ax = rets.plot(kind='scatter', x='.SPX', y='.VIX', figsize=(10, 6))  #2
+         ax.plot(rets['.SPX'], np.polyval(reg, rets['.SPX']), 'r', lw=2);  #3
+         
+# Captura de tela 2022-11-24 171458.jpg
+```
+
+1 This implements a linear OLS regression.
+2 This plots the log returns as a scatter plot …
+3 … to which the linear regression line is added.
+
+### Correlation
+
+Finally, we consider correlation measures directly. Two such measures are considered: a static one taking into account the complete data set and a rolling one showing the correlation for a fixed window over time. Figure 8-13 illustrates that the correlation indeed varies over time but that it is always, given the parameterization, negative. This provides strong support for the stylized fact that the S&P 500 and the VIX indices are (strongly) negatively correlated:
+
+```python
+In [56]: rets.corr()  #1
+Out[56]:           .SPX      .VIX
+         .SPX  1.000000 -0.804382
+         .VIX -0.804382  1.000000
+
+In [57]: ax = rets['.SPX'].rolling(window=252).corr(
+                           rets['.VIX']).plot(figsize=(10, 6))  #2
+         ax.axhline(rets.corr().iloc[0, 1], c='r');  #3
+
+# Captura de tela 2022-11-24 171705.jpg
+```
+
+1 The correlation matrix for the whole DataFrame.
+2 This plots the rolling correlation over time …
+3 … and adds the static value to the plot as horizontal line.
+
+## High-Frequency Data
+
+This chapter is about financial time series analysis with pandas. Tick data sets are a special case of financial time series. Frankly, they can be handled more or less in the same ways as, for instance, the EOD data set used throughout this chapter so far. Importing such data sets also is quite fast in general with pandas. The data set used comprises 17,352 data rows (see also Figure 8-14):
+
+```python
+In [59]: %%time
+         # data from FXCM Forex Capital Markets Ltd.
+         tick = pd.read_csv('../../source/fxcm_eur_usd_tick_data.csv',
+                              index_col=0, parse_dates=True)
+         CPU times: user 1.07 s, sys: 149 ms, total: 1.22 s
+         Wall time: 1.16 s
+
+In [60]: tick.info()
+         <class 'pandas.core.frame.DataFrame'>
+         DatetimeIndex: 461357 entries, 2018-06-29 00:00:00.082000 to 2018-06-29
+          20:59:00.607000
+         Data columns (total 2 columns):
+         Bid    461357 non-null float64
+         Ask    461357 non-null float64
+         dtypes: float64(2)
+         memory usage: 10.6 MB
+
+In [61]: tick['Mid'] = tick.mean(axis=1)  #1
+
+In [62]: tick['Mid'].plot(figsize=(10, 6));
+
+# Captura de tela 2022-11-24 172000.jpg
+```
+
+1 Calculates the Mid price for every data row.
+
+Working with tick data is generally a scenario where resampling of financial time series data is needed. The code that follows resamples the tick data to five-minute bar data (see Figure 8-15), which can then be used, for example, to backtest algorithmic trading strategies or to implement a technical analysis:
+
+```python
+In [63]: tick_resam = tick.resample(rule='5min', label='right').last()
+
+In [64]: tick_resam.head()
+Out[64]:                          Bid      Ask       Mid
+         2018-06-29 00:05:00  1.15649  1.15651  1.156500
+         2018-06-29 00:10:00  1.15671  1.15672  1.156715
+         2018-06-29 00:15:00  1.15725  1.15727  1.157260
+         2018-06-29 00:20:00  1.15720  1.15722  1.157210
+         2018-06-29 00:25:00  1.15711  1.15712  1.157115
+
+In [65]: tick_resam['Mid'].plot(figsize=(10, 6));
+
+# Captura de tela 2022-11-24 172112.jpg
+```
+
+---
 
 ```{r}
 # IBOVESPA
