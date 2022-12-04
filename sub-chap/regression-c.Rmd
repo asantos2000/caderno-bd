@@ -6,7 +6,7 @@ Análise descritiva e regressão linear sobre o conjunto de dados SALES_X_YOUTUB
 
 Pacotes necessários para estes exercícios:
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 library(readxl)
 library(tidyverse)
 library(readxl)
@@ -82,14 +82,11 @@ plot(model)
 
 Ajustando o modelo a mais variáveis (multiclass).
 
-
 ```{r}
 modelMult = lm(sales ~ youtube + facebook + newspaper, data = dados03)
 summary(modelMult)
 plot(modelMult)
 ```
-
-
 
 Newspaper tem pouca influência no modelo, sendo o youtube a que mais influência nas vendas.
 

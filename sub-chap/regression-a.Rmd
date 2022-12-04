@@ -6,7 +6,7 @@ Análise descritiva e regressão linear sobre o conjunto de dados Data_HousePric
 
 Pacotes necessários para estes exercícios:
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 library(readxl)
 library(tidyverse)
 library(readxl)
@@ -37,12 +37,12 @@ kable(dadosCen02) %>%
   kable_styling(latex_options = "striped")
 ```
 
-No gráfico:
+Dispersão dos valores para os dois cenários:
 
 ```{r echo=FALSE}
 par(mfrow = c(1,2))
-plot(dadosCen01$`Square Feet` ~ dadosCen01$`House Price`, main='Cenário 01', col = 2, pch = 5, xlab = 'Square Feet', ylab = 'House Price')
-plot(dadosCen02$`Square Feet` ~ dadosCen02$`House Price`, main='Cenário 02', col = 3, pch = 16, xlab = 'Square Feet', ylab = 'House Price')
+plot(dadosCen01$`House Price` ~ dadosCen01$`Square Feet`, main='Cenário 01', col = 2, pch = 5, xlab = 'Square Feet', ylab = 'House Price')
+plot(dadosCen02$`House Price` ~ dadosCen02$`Square Feet`, main='Cenário 02', col = 3, pch = 16, xlab = 'Square Feet', ylab = 'House Price')
 ```
 
 Comparando os dois gráficos, podemos observar:
@@ -99,22 +99,18 @@ Vamos agora ajustar um modelo de regressão para ambos os cenários.
 #### Cenário 01
 
 ```{r}
-modelCen01 <- lm(dadosCen01$`Square Feet` ~ dadosCen01$`House Price`)
+modelCen01 <- lm(dadosCen01$`House Price` ~ dadosCen01$`Square Feet`)
 modelCen01
 ```
 
-$y = 199.034 + 5.291 x$
-
-Cálculo do resíduo:
-
-$y = 199.034 + 5.291 x$ para $x = 1400$, $y = valor$. Diferença entre o y dado e o calculado é o resíduo.
+$y = `r  modelCen01$coefficients[1]` + `r modelCen01$coefficients[2]` x$
 
 ```{r}
 resumoMod01 = summary(modelCen01)
 resumoMod01
 ```
 
-$R^2$: `r round(resumoMod01$r.squared, 2)`
+$R^2 = `r round(resumoMod01$r.squared, 2)`$
 
 
 Vamos analisar os resíduos:
@@ -128,7 +124,7 @@ plot(modelCen01$residuals ~ dadosCen01$`House Price`)
 ```{r}
 plot(modelCen01, pch = 16, col = "blue")
 
-plot(dadosCen01$`Square Feet` ~ dadosCen01$`House Price`)
+plot(dadosCen01$`House Price` ~ dadosCen01$`Square Feet`)
 abline(modelCen01) #Add a regression line
 ```
 
@@ -138,33 +134,30 @@ Como as observações são mais esparças, um modelo linear simples não se ajus
 #### Cenário 02
 
 ```{r}
-modelCen02 <- lm(dadosCen02$`Square Feet` ~ dadosCen02$`House Price`)
+y <- dadosCen02$`House Price`
+x <- dadosCen02$`Square Feet`
+
+modelCen02 <- lm(y ~ x)
 modelCen02
 ```
 
-$y = 186.202 + 5.495 x$
+$y = `r  modelCen02$coefficients[1]` + `r modelCen02$coefficients[2]` x$
 
 
 ```{r}
 plot(modelCen02, pch = 16, col = "blue")
 
-plot(dadosCen02$`Square Feet` ~ dadosCen01$`House Price`)
+plot(dadosCen01$`House Price` ~ dadosCen01$`Square Feet`)
 abline(modelCen01) #Add a regression line
 ```
 
-
-Cálculo do resíduo:
-
-
-$y = 186.202 + 5.495 x$ para $x = 1400$, $y = valor$. Diferença entre o y dado e o calculado é o resíduo.
 
 ```{r}
 resumoMod02 = summary(modelCen02)
 resumoMod02
 ```
 
-
-$R^2$: `r round(resumoMod02$r.squared, 2)`
+$R^2 = `r round(resumoMod02$r.squared, 2)`$
 
 Vamos analisar os resíduos:
 
@@ -177,7 +170,8 @@ Neste cenário as observações estão mais agrupadas próximas a uma reta, send
 ### Predição
 
 ```{r}
-p = predict(modelCen02, newdata = data.frame(x = 1300))
+new <- data.frame(x = 1300)
+p <- predict(lm(y ~ x), new)
 ```
-Usando o modelo um, uma casa de $1300 ft^2$ custaria `r p`
+Usando o modelo um, uma casa de $`r new$x`ft^2$ custaria $`r round(p, 2)`$
 

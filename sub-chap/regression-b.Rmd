@@ -6,7 +6,7 @@ Análise descritiva e regressão linear sobre o conjunto de dados Data_ConsumoEn
 
 Pacotes necessários para estes exercícios:
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 library(readxl)
 library(tidyverse)
 library(readxl)

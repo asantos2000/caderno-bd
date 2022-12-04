@@ -1,0 +1,46 @@
+```{r}
+library(tidyverse)
+library(ralger)
+  
+indicadores_acao <- function(cod_acao){
+  
+# obtendo tabela com dados fundamentalistas
+dados_fundamentus <- table_scrap(paste0("https://www.fundamentus.com.br/detalhes.php?papel=",cod_acao),choose = 3)
+# retirando colunas não necessárias, que tratam de oscilações do preço da ação
+dados_fundamentus <- dados_fundamentus[,-c(1,2)]
+# criando um dataframe novo com os dados organizados por indicadores e valores
+dados_fundamentus2 <- data.frame(indicadores_fund = c(dados_fundamentus[,"Indicadores fundamentalistas"],
+                                                      dados_fundamentus[,"Indicadores fundamentalistas.2"]),
+                                 valores = c(dados_fundamentus[,"Indicadores fundamentalistas.1"],
+                                             dados_fundamentus[,"Indicadores fundamentalistas.3"]))
+# retirando "?" no começo de cada termo
+dados_fundamentus2$indicadores_fund <- sub("^.", "", dados_fundamentus2$indicadores_fund)
+# renomeando algumas colunas
+dados_fundamentus2$indicadores_fund <- recode(dados_fundamentus2$indicadores_fund,
+                             `Cres. Rec (5a)`= "Cres.Rec.Ultimos.5anos",
+                             `EV / EBIT` = "EV_EBIT",
+                             `Marg. EBIT` = "Marg.EBIT",
+                             `Div. Yield` = "Div.Yield",
+                             `Marg. Líquida` = "Marg.Liquida",
+                             `Liquidez Corr` = "Liquidez.Corrente",
+                             `EBIT / Ativo` = "EBIT_Ativo",
+                             `Div Br/ Patrim` = "Div.Bruta_Patrimonio",
+                             `P/Cap. Giro` = "P_Cap.Giro",
+                             `Marg. Bruta` = "Margem.Bruta",
+                             `Giro Ativos` = "Giro.Ativos",
+                             `P/Ativ Circ Liq` = "P_Ativo.Circ.Liq",
+                             `EV / EBITDA` = "EV_EBITDA")
+# criando coluna com nome da ação e alterando a estrutura do banco de dados
+dados_fundamentus2 <- dados_fundamentus2 %>%
+                         mutate(Acao = cod_acao) %>%
+                           spread(key = indicadores_fund, value = valores)
+}
+```
+
+Dados fundamentalistas
+
+```{r}
+indicadores_acao('PETR4')
+```
+
+

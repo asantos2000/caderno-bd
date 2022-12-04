@@ -6,7 +6,7 @@ Análise descritiva e regressão linear sobre o conjunto de dados CREDIT SCORE X
 
 Pacotes necessários para estes exercícios:
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 library(readxl)
 library(tidyverse)
 library(readxl)
@@ -40,7 +40,6 @@ Situação explicada pela renda.
 
 ```{r}
 plot(dados04$R ~ dados04$ST)
-# table(dados04$VE, dados04$ST)
 ```
 
 O modelo é 

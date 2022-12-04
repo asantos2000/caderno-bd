@@ -1,0 +1,217 @@
+```{r warning=FALSE, message=FALSE}
+library(quantmod)
+library(xts)
+library(sidrar)
+library(timetk)
+library(tidyverse)
+library(jsonlite)
+library(ggplot2)
+library(scales)
+library(BatchGetSymbols)
+library(dplyr)
+library(rb3)
+library(pastecs)
+library(ggpubr)
+library(bizdays)
+
+#conflicts(detail = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+first_date = as.Date('2000-01-01')
+last_date = as.Date('2022-11-25')
+eval_period = last_date - first_date
+
+df_bvsp = BatchGetSymbols('^BVSP', first.date = first_date,
+ last.date = last_date)
+```
+
+## Índice IBOVESPA
+
+O período de análise será de `r floor(eval_period / 365)` anos, de `r first_date` até `r last_date`.
+
+O comportamento do índice bovespa neste período foi:
+
+```{r}
+ggplot(df_bvsp$df.tickers, aes(x = ref.date, y = price.close))+
+ geom_line()+
+ scale_y_discrete(limits=c(10000, 20000, 30000, 40000, 50000, 60000,
+ 70000, 80000, 90000, 100000, 110000, 120000, 130000))+
+ scale_x_date(breaks = date_breaks("1 years"),
+ labels = date_format("%Y"))+
+ xlab('')+ylab('Pontos')+
+ labs(title='Índice Bovespa',
+ caption='Fonte: Yahoo Finance.')+
+ geom_line() +
+ geom_smooth(method = "loess", se = FALSE) +
+ theme(axis.text.x = element_text(angle = 90)
+)
+```
+
+## Indicador SELIC
+
+A meta da taxa [SELIC](https://www.bcb.gov.br/estatisticas/grafico/graficoestatistica/metaselic) diária.
+
+
+```{r}
+df_selic_meta <- read.csv2(file = "../dados/Taxa de juros - Selic - fixada pelo Comitê de Política Monetária.csv",
+                           sep=";", dec=",",
+                           colClasses = c("character", "numeric", "NULL"),
+                           col.names = c("ref.date", "selic.tax", ""))
+df_selic_meta <- transform(df_selic_meta, ref.date = as.Date(ref.date,'%d/%m/%Y'))
+
+df_selic_meta <- na.omit(df_selic_meta) %>% 
+                    filter(ref.date >= first_date)
+
+tail(df_selic_meta)
+```
+
+E o comportamento no período foi:
+
+```{r}
+ggplot(df_selic_meta, aes(x = ref.date, y = selic.tax))+
+ geom_line()+
+ scale_x_date(breaks = date_breaks("1 years"),
+ labels = date_format("%Y"))+
+ xlab('')+ylab('%')+
+ labs(title='Meta taxa selic',
+ caption='Fonte: Banco Central do Brasil.')+
+ geom_line() +
+ geom_smooth(method = "loess", se = FALSE)+
+ theme(axis.text.x = element_text(angle = 90))
+```
+
+### Unindo os conjuntos de dados
+
+```{r}
+# Usando apenas valor de fechamento
+df_bvsp_close <- df_bvsp$df.tickers %>%
+                  dplyr::select(ref.date, price.close)
+
+df_bvsp_selic <- merge(df_bvsp_close, df_selic_meta, by = 'ref.date', all.x = T)
+
+df_bvsp_selic <- df_bvsp_selic %>% 
+                    fill(selic.tax, .direction = "downup")
+```
+
+#### Salvando o conjunto de dados
+
+```{r}
+# antes de proceder com o restante do exercicio, vamos salvar o dataset para
+# o usar nos proximos modulos
+write_rds(df_bvsp_selic, "../dados/series_bvsp_selic_10.rds")
+```
+
+## Correlação ibovespa e selic
+
+```{r warning=FALSE}
+bvsp_norm <- sd(df_bvsp_selic$price.close, na.rm=TRUE)
+selic_norm <- sd(df_bvsp_selic$selic.tax, na.rm=TRUE)
+
+ggplot(df_bvsp_selic, aes(x=ref.date)) +
+  
+  geom_line(aes(y=price.close / bvsp_norm), size=2, color="blue", na.rm = TRUE, alpha=.6) + 
+  stat_smooth(size=2, aes(y=price.close / bvsp_norm), color="lightblue") +
+  geom_line(aes(y=selic.tax / selic_norm), size=2, color="red", na.rm = TRUE, alpha=.6) +
+  stat_smooth(size=2, aes(y=selic.tax / selic_norm), color = "tomato") +
+
+  scale_y_continuous(
+    
+    # Features of the first axis
+    name = "bvsp",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~./selic_norm, name="selic")
+  ) +
+
+  ggtitle("Ibovespa vs Selic")
+```
+
+
+## Decomposição anual
+
+TODO
+
+## Análise de _outliers_
+
+TODO
+
+## Correlação cruzada ibovespa e selic
+
+CCF - Cross Correlation Function
+
+Dado duas séries temporais $y_t, x_t$
+
+Conjunto de correlações $x_{t+h}$ e $y_t$ onde $h = 0, \pm 1, \pm 2, \pm p$
+
+Um valor negativo de $h$ é a correlação entre a série $x_t$ em um tempo antes de $t$ com a série $y_t$ no tempo $t$.
+
+
+```{r}
+# https://www.lobdata.com.br/2020/09/15/how-to-perform-correlation-analysis-in-time-series-data-using-r/
+
+df_bvsp_selic_long <- df_bvsp_selic %>% 
+  pivot_longer(cols = c(price.close, selic.tax), names_to = "names", values_to = "value")
+```
+
+```{r}
+# the series
+df_bvsp_selic_long %>% 
+  plot_time_series(.date_var = ref.date,
+                   .value = value,
+                   .facet_vars = names)
+```
+```{r}
+# acf/pacf plots
+df_bvsp_selic_long %>%
+  group_by(names) %>% 
+  plot_acf_diagnostics(.date_var = ref.date,
+                       .value = value,
+                       .show_white_noise_bars = T)
+```
+
+```{r}
+# CCF plot
+df_bvsp_selic %>% 
+  plot_acf_diagnostics(.date_var = ref.date,
+                       .value = price.close,
+                       .ccf_vars = selic.tax,
+                       .show_ccf_vars_only = T)
+```
+
+
+```{r}
+stat.desc(df_bvsp_selic)
+```
+
+
+```{r}
+cor(df_bvsp_selic$price.close, df_bvsp_selic$selic.tax, method = c("pearson", "kendall", "spearman"))
+```
+
+```{r}
+cor.test(df_bvsp_selic$price.close, df_bvsp_selic$selic.tax, method=c("pearson", "kendall", "spearman"))
+```
+
+```{r}
+ccf(df_bvsp_selic$price.close, df_bvsp_selic$selic.tax)
+```
+
+```{r}
+# Quick display of two cabapilities of GGally, to assess the distribution and correlation of variables 
+library(GGally)
+
+# Nice visualization of correlations
+ggcorr(df_bvsp_selic, method = c("pairwise", "pearson"), label = TRUE, label_alpha = TRUE) 
+```
+
+```{r}
+ggpairs(df_bvsp_selic, columns = 2:3) 
+```
+
+## Expectativas do COPOM nos contratos de DI1
+
+Ref: http://wilsonfreitas.github.io/posts/expectativas-do-copom-nos-contratos-de-di1.html
+
+TODO
+

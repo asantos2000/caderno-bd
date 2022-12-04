@@ -6,7 +6,7 @@ Avaliar a inibina B como marcador da reserva ovariana de pacientes submetidas à
 
 Pacotes necessários para estes exercícios:
 
-```{r warning=FALSE, echo=FALSE}
+```{r warning=FALSE, message=FALSE}
 library(readxl)
 library(tidyverse)
 library(readxl)
@@ -29,43 +29,51 @@ library(ggpubr)
 
 ### Conjunto de dados
 
-```{r}
-#GET("http://www.ime.usp.br/~jmsinger/MorettinSinger/inibina.xls", write_disk(tf <- tempfile(fileext = ".xls")))
+```{r warning=FALSE, message=FALSE}
 httr::GET("http://www.ime.usp.br/~jmsinger/MorettinSinger/inibina.xls", httr::write_disk("../dados/inibina.xls", overwrite = TRUE))
 
 inibina <- read_excel("../dados/inibina.xls")
-str(inibina)
 ```
 
+Adicionando coluna com a diferença entre pré e pós e ajustando a variável resposta para categórica:
+
 ```{r}
-nrow(inibina)
-sum()
 inibina$difinib = inibina$inibpos - inibina$inibpre
 inibina$resposta = as.factor(inibina$resposta)
 ```
 
+Distribuição das respostas do conjunto de dados:
+
 ```{r}
+kable(inibina) %>%
+  kable_styling(latex_options = "striped")
+
 plot(inibina$difinib ~ inibina$resposta, ylim = c(0, 400))
-print(inibina, n = 32)
 ```
 
 ```{r}
-# Hmisc::describe(inibina)
-
 summary(inibina)
-sd(inibina$difinib)
 ```
 
-Criando um dataframe para comparar as métricas dos modelos.
+O desvio padrão da diferençca da inibina pós e pré é $`r sd(inibina$difinib)`$.
+
+Distribuição:
 
 ```{r}
+x = 1:32
+plot(inibina$difinib ~ x, col = inibina$resposta)
+```
+
+```{r echo=FALSE}
+# Criando um dataframe para comparar as métricas dos modelos.
 model_eval <- data.frame(matrix(ncol = 5, nrow = 0))
 
 colnames(model_eval) <- c('Model', 'Algorithm', 'Accuracy', 'Sensitivity', 'Specificity')
 ```
 
-
 ### Generalized Linear Models
+
+Treinando e avalaindo o modelo:
 
 ```{r}
 modLogist01 = glm(resposta ~ difinib, family = binomial, data = inibina)
@@ -109,6 +117,8 @@ Treinar o modelo com o método LOOCV, neste conjunto de dados, não mudou o resu
 
 ### Linear Discriminant Analysis - Fisher
 
+Treinando e avalaindo o modelo:
+
 ```{r}
 modFisher01 = lda(resposta ~ difinib, data = inibina, prior = c(0.5, 0.5))
 predito = predict(modFisher01)
@@ -121,6 +131,8 @@ model_eval[nrow(model_eval) + 1,] <- c("modFisher01-prior 0.5 / 0.5", "lda", cm$
 ```
 
 ### Bayes
+
+Treinando e avalaindo o modelo:
 
 ```{r}
 inibina$resposta
@@ -138,7 +150,9 @@ model_eval[nrow(model_eval) + 1,] <- c("modBayes01-prior 0.65 / 0.35", "lda", cm
 table(classPred)
 print(inibina, n = 32)
 ```
-Naive Bayes
+#### Naive Bayes
+
+Treinando e avalaindo o modelo:
 
 ```{r}
 modNaiveBayes01 = naiveBayes(resposta ~ difinib, data = inibina)
@@ -152,11 +166,13 @@ model_eval[nrow(model_eval) + 1,] <- c("modNaiveBayes01", "naiveBayes", cm$overa
 
 ### Decison tree
 
+Treinando e avalaindo o modelo:
+
 ```{r}
 modArvDec01 = rpart(resposta ~ difinib, data = inibina) 
-prp(modArvDec01,  faclen=0, #use full names for factor labels
-    extra=1, #display number of observations for each terminal node
-    roundint=F, #don't round to integers in output
+prp(modArvDec01,  faclen=0,
+    extra=1,
+    roundint=F,
     digits=5)
 
 predito = predict(modArvDec01, type = "class")
@@ -167,36 +183,36 @@ cm
 model_eval[nrow(model_eval) + 1,] <- c("modArvDec01", "rpart", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
 ```
 
-```{r}
-x = 1:32
-plot(inibina$difinib ~x, col = inibina$resposta)
-```
-
 ### SVM
+
+Treinando e avalaindo o modelo:
 
 ```{r}
 modSVM01 = svm(resposta ~ difinib, data = inibina, kernel = "linear")
 predito = predict(modSVM01, type = "class")
 cm = confusionMatrix(predito, inibina$resposta, positive = "positiva")
+cm
 
 # Adiciona as métricas no df
 model_eval[nrow(model_eval) + 1,] <- c("modSVM01", "svm", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
 ```
 
-### neuralnet
+### Neural network
 
-```{r}
+Treinando e avalaindo o modelo:
+
+```{r cache=TRUE, cache.path="cache/"}
 modRedNeural01 = neuralnet(resposta ~ difinib, data = inibina, hidden = c(2,4,3))
 plot(modRedNeural01)
 
 ypred = neuralnet::compute(modRedNeural01, inibina)
 yhat = ypred$net.result
 
-round(yhat)
+yhat = round(yhat)
 
 yhat=data.frame("yhat"=ifelse(max.col(yhat[ ,1:2])==1, "negativa", "positiva"))
 
-cm = confusionMatrix(inibina$resposta, as.factor(yhat$yhat))
+cm = confusionMatrix(as.factor(yhat$yhat), inibina$resposta)
 cm
 
 # Adiciona as métricas no df
@@ -205,17 +221,9 @@ model_eval[nrow(model_eval) + 1,] <- c("modRedNeural01", "neuralnet", cm$overall
 
 ### KNN
 
-```{r}
-modKnn1_01 = knn3(resposta ~ difinib, data = inibina, k = 1)
-predito = predict(modKnn1_01, inibina, type = "class")
-cm = confusionMatrix(predito, inibina$resposta, positive = "positiva")
-cm
+Treinando e avalaindo o modelo:
 
-# Adiciona as métricas no df
-model_eval[nrow(model_eval) + 1,] <- c("modKnn1_01-k=1", "knn3", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
-```
-
-k = 3
+Para $k = 3$:
 
 ```{r}
 modKnn3_01 = knn3(resposta ~ difinib, data = inibina, k = 3)
@@ -226,7 +234,7 @@ cm = confusionMatrix(predito, inibina$resposta, positive = "positiva")
 model_eval[nrow(model_eval) + 1,] <- c("modKnn3_01-k=3", "knn3", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
 ```
 
-k = 5
+Para $k = 5$:
 
 ```{r}
 modKnn5_01 = knn3(resposta ~ difinib, data = inibina, k = 5)
@@ -238,7 +246,7 @@ cm
 model_eval[nrow(model_eval) + 1,] <- c("modKnn5_01-k=5", "knn3", cm$overall['Accuracy'], cm$byClass['Sensitivity'], cm$byClass['Specificity'])
 ```
 
-### Avaliando os modelos
+### Comparando os modelos
 
 ```{r echo=FALSE}
 kable(model_eval) %>%
@@ -254,20 +262,24 @@ inibinaS = inibina[, 3:5]
 
 d <- dist(inibinaS, method = "maximum")
 grup = hclust(d, method = "ward.D")
-plot(grup, cex = 0.6)
 
 groups <- cutree(grup, k=3)
+
+plot(grup, cex = 0.6)
+rect.hclust(grup , k = 3, border = 2:6)
+abline(h = 3, col = 'red')
 ```
 
 ```{r}
 table(groups, inibina$resposta)
 ```
 
+Como indicado no dendograma, podemos dividir em 3 grupos:
 
 ```{r}
-km1 = kmeans(inibinaS, 4)
+km1 = kmeans(inibinaS, 3)
 p1 = fviz_cluster(km1, data=inibinaS,
-                  palette = c("#2E9FDF", "#FC4E07", "#E7B800", "#E7B700"),
+                  palette = c("#2E9FDF", "#FC4E07", "#E7B800", "#E7B700", "#D7B700"),
                   star.plot=FALSE,
                   # repel=TRUE,
                   ggtheme=theme_bw())

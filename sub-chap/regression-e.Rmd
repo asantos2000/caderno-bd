@@ -6,7 +6,7 @@ Análise descritiva e regressão linear.
 
 Pacotes necessários para estes exercícios:
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 library(readxl)
 library(tidyverse)
 library(readxl)
@@ -83,33 +83,47 @@ p = predict.lm(modelo, newdata = data.frame(Filhos = as.factor(3), Paes = 386, V
 p
 ```
 
-O valor da Ave na linha 5 é `r p`
+O valor da Ave na linha 5 é $`r p`$
 
 Ajustando o conjunto de dados:
 
+O valor de Aves é $NA$:
+
 ```{r}
-# Antes ajuste
-dados[5, ]
-
-dados[5, ]['Aves'] = p
-
-# Depois ajuste
 dados[5, ]
 ```
 
+Vamos ajustar o conjunto de dados com o valor predito para aves:
+
+```{r}
+dados[5, ]['Aves'] = p
+```
+
+Conjunto de dados ajustado:
+
+```{r}
+dados[5, ]
+```
 
 ### Agrupamento
 
-```{r}
+```{r message=FALSE}
 dadosS = subset(dados, select=c("Paes", "Vegetais", "Frutas", "Carnes", "Aves", "Leite", "Alcoolicos"))
 
 d <- dist(dadosS, method = "maximum")
 grup = hclust(d, method = "ward.D")
-plot(grup, cex = 0.6)
 
 groups <- cutree(grup, k=3)
-table(groups, dados$Aves)
+
+plot(grup, cex = 0.6)
+rect.hclust(grup , k = 3, border = 2:6)
+abline(h = 3, col = 'red')
+
+kable(sort(groups)) %>%
+  kable_styling(latex_options = "striped")
 ```
+
+Pelo dendograma podemos dividir os dados em 3 clusters.
 
 ```{r}
 km1 = kmeans(dadosS, 3)

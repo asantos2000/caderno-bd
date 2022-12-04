@@ -6,7 +6,7 @@ Análise de agrupamento para os dados USArrests.
 
 Pacotes necessários para estes exercícios:
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 library(readxl)
 library(tidyverse)
 library(readxl)
@@ -49,14 +49,21 @@ summary(df)
 
 d <- dist(df, method = "maximum")
 grup = hclust(d, method = "ward.D")
-plot(grup, cex = 0.6)
 
 groups <- cutree(grup, k=3)
-groups
+
+plot(grup, cex = 0.6)
+rect.hclust(grup , k = 3, border = 2:6)
+abline(h = 3, col = 'red')
+
+kable(sort(groups)) %>%
+  kable_styling(latex_options = "striped")
 ```
 
+Pelo dendograma podemos infererir uma divisão em 3 clusters:
+
 ```{r}
-km1 = kmeans(df, 4, nstart = 25)
+km1 = kmeans(df, 3, nstart = 25)
 km1
 ```
 

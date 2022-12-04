@@ -6,17 +6,41 @@ date: "2022-11-23"
 
 # As decisões do copom e o índice Ibovespa
 
+A cada 0,25% variação na taxa de juros nós temos 1% de impacto no índice bovespa (EID JUNIO, 2012).
+
+Impacto de modificações não esperadas na taxa de juros, porque o que o mercado já sabe está no preço, O mercado se antecipa sobre o que ele sabe.
+
+Surpresas olhando para o mercado futuro de juros. Aqui você tem o que  o mercado está esperando. Se o mercado futuro está negociando um juros de 10% e o copom lança um de 10,5%, isso é uma surpresa, uma não antecipação do mercado.
+
+A pergunta e a resposta são relevantes. As decisões do Comitê de Política Monetária (Copom) causam um impacto  mensurável no mercado, de uma decisão que é constante.
+
+Taxas baixas, o custo do dinheiro cae e as empresas podem investir em mais projetos, por outro lado, você tem um incentivo ao consumo, financiamentos são melhores e do lado dos investimentos, quem busca retorno precisa arriscar.
+
+
+
+
+
 ## Referências
 
 EID JÚNIOR, William. As decisões do Copom e o Índice Bovespa. 2012.
 https://pesquisa-eaesp.fgv.br/publicacoes/gvp/decisoes-do-copom-e-o-indice-bovespa
 https://bibliotecadigital.fgv.br/dspace/handle/10438/14401
 
+[](bkp/surpresa-taxas-mercado.pdf)
+
+![](bkp/causalidade-selic-ibovespa.pdf)
+
+CASTRO, F. Henrique et al. Fifty-year History of the Ibovespa. Brazilian Review of Finance, v. 17, n. 3, p. 47-65, 2019.
+https://bibliotecadigital.fgv.br/ojs/index.php/rbfin/article/download/80028/77112
+
 https://bpiconsultoria.com/2018/08/29/qual-a-influencia-da-taxa-selic-na-bolsa/
 
 https://www.moneytimes.com.br/tempo-real-acompanhe-o-ibovespa-ibov-nesta-quarta-feira/
 
 https://lume.ufrgs.br/handle/10183/83565
+
+https://www.fundamentus.com.br/detalhes.php?papel=PETR4
+
 
 ```{r}
 library(quantmod)
@@ -468,64 +492,6 @@ Out[64]:                          Bid      Ask       Mid
 In [65]: tick_resam['Mid'].plot(figsize=(10, 6));
 
 # Captura de tela 2022-11-24 172112.jpg
-```
-
----
-
-```{r}
-# IBOVESPA
- 
-## Coleta os dados do Yahoo Finance
- 
-getSymbols("^BVSP", src= "yahoo",
-from= as.Date('2001-01-01'))
- 
-## Captura os preços de fechamento
- 
-ibovespa <- Cl(BVSP) %>%
-na.omit() %>%
-`colnames<-`("ibovespa")
- 
-## Transforma em trimestral
- 
-ibov_qtr <- apply.quarterly(ibovespa, FUN = mean) %>%
-tk_tbl(preserve_index = TRUE,
-rename_index = "date") %>%
-mutate(date = as.yearqtr(date, type = "%Y%q"))
- 
-## Cria o objeto ts
- 
-ibov_qtr_ts <- ts(ibov_qtr$ibovespa, start=c(2001,01), freq = 4)
-```
-
-```{r}
-plot(ibovespa)
-```
-
-
-```{r}
-# FBCF
- 
-## Coleta os dados do SIDRA e calcula o crescimento interanual
- 
-fbcf = get_sidra(api="/t/1620/n1/all/v/all/p/all/c11255/93406/d/v583%202") %>%
-dplyr::select(date = "Trimestre (Código)", value = "Valor") %>%
-mutate(date = as.yearqtr(date, format = "%Y%q"),
-dfbcf = (value/lag(value, 4) -1) * 100)
- 
-## Cria o objeto ts
- 
-fbcf_ts = ts(fbcf$value, start=c(1996,01), freq=4)
- 
-dfbcf_ts = (fbcf_ts/stats::lag(fbcf_ts, -4) -1) * 100
-```
-
-```{r}
-fbcf_ts
-```
-
-```{r}
-dfbcf_ts
 ```
 
 

@@ -6,7 +6,7 @@ Os dados do arquivo tipofacial (disponível [aqui](http://www.ime.usp.br/~jmsing
 
 Pacotes necessários para estes exercícios:
 
-```{r warning=FALSE, echo=FALSE}
+```{r warning=FALSE, message=FALSE}
 library(readxl)
 library(tidyverse)
 library(readxl)
@@ -26,6 +26,7 @@ library(neuralnet)
 library(factoextra)
 library(ggpubr)
 library(nnet)
+library(modelr)
 ```
 
 ### Conjunto de dados
@@ -34,7 +35,6 @@ library(nnet)
 httr::GET("http://www.ime.usp.br/~jmsinger/MorettinSinger/tipofacial.xls", httr::write_disk("../dados/tipofacial.xls", overwrite = TRUE))
 
 tipofacial <- read_excel("../dados/tipofacial.xls")
-str(tipofacial)
 ```
 
 Número de observações `r nrow(tipofacial)`.
@@ -50,56 +50,92 @@ tipofacial$grupo = as.factor(tipofacial$grupo)
 
 ```{r}
 plot(tipofacial$sumfac  ~ tipofacial$grupo)
-print(tipofacial, n = 32)
+
+kable(tipofacial) %>%
+  kable_styling(latex_options = "striped")
 ```
 
 ```{r}
-summary(tipofacial)
-sd(tipofacial$sumfac)
+kable(summary(tipofacial)) %>%
+  kable_styling(latex_options = "striped")
 ```
 
-Criando um dataframe para comparar as métricas dos modelos.
+Distribuição:
 
 ```{r}
+x = 1:nrow(tipofacial)
+plot(tipofacial$sumfac ~ x, col = tipofacial$grupo)
+```
+
+### Separando o conjunto de dados para treinamento
+
+Separando os dados de treinamento e testes utilizando kfold:
+
+```{r}
+folds = 5
+
+cv  <- crossv_kfold(tipofacial, k = folds)
+
+cv
+```
+
+Separando dados de treinamento (70%) e testes (30%).
+
+```{r}
+alpha=0.7
+d = sort(sample(nrow(tipofacial), nrow(tipofacial)*alpha))
+train = tipofacial[d,]
+test = tipofacial[-d,]
+```
+
+```{r echo=FALSE}
+# Função de suporte
+get_pred  <- function(model, test_data){
+  data  <- as.data.frame(test_data)
+  pred  <- add_predictions(data, model)
+  return(pred)
+}
+
+# Criando um dataframe para comparar as métricas dos modelos.
 model_eval <- data.frame(matrix(ncol = 9, nrow = 0))
 
 colnames(model_eval) <- c('Model', 'Algorithm', 'Accuracy', 'Sensitivity_C1', 'Sensitivity_C2', 'Sensitivity_C3', 'Specificity_C1', 'Specificity_C2', 'Specificity_C3')
 ```
 
-
 ### Generalized Linear Models
 
+Treinando os modelos:
+
 ```{r}
-glm.fit = multinom(grupo ~ sumfac, data=tipofacial)
-summary(glm.fit)
+glm.fit = map(cv$train, ~multinom(grupo ~ sumfac, data= .))
 ```
 
+Predição com os modelos:
+
 ```{r}
-predito = predict(glm.fit, newdata = tipofacial)
-cm = confusionMatrix(predito, tipofacial$grupo)
-cm
+preditos  <- map2_df(glm.fit, cv$test, get_pred, .id = "Run")
 
-# Adiciona as métricas no df
-model_eval[nrow(model_eval) + 1,] <- c("glm.fit", "glm", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
-
+for (run in 1:folds) {
+  pred <- preditos %>% filter(Run == run)
+  cm = confusionMatrix(pred$pred, pred$grupo)
+  
+  cat("\n", "--- Run ", run, "---", "\n")
+  print(cm)
+  
+  # Adiciona as métricas no df
+  model_eval[nrow(model_eval) + 1,] <- c(paste("glm.fit", run, sep="-"), "glm", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
+  run <- run + 1
+}
 ```
 
-
-Seprando dados de treinamento (70%) e testes (30%).
-
+Treinando o modelo:
 
 ```{r}
-
-alpha=0.7
-d = sort(sample(nrow(tipofacial), nrow(tipofacial)*alpha))
-train = tipofacial[d,]
-test = tipofacial[-d,]
-
 glm.fit = multinom(grupo ~ sumfac, data=train)
 
 summary(glm.fit)
 
-predito = predict(glm.fit, newdata = test)
+predito = predict(glm.fit, newdata=test)
 cm = confusionMatrix(predito, test$grupo)
 cm
 
@@ -113,9 +149,11 @@ kable(model_eval) %>%
 ```
 
 
-Treinar o modelo com um conjunto de dados diferente do de teste mostrou que o modelo tem uma capcidade razoável de generalização.
+Treinar o modelo com um conjunto de dados diferente do de teste mostrou que o modelo tem uma capacidade razoável de generalização.
 
 ### Linear Discriminant Analysis - Fisher
+
+Treinando o modelo:
 
 ```{r}
 modFisher01 = lda(grupo ~ sumfac, data = tipofacial)
@@ -127,11 +165,26 @@ cm
 # Adiciona as métricas no df
 model_eval[nrow(model_eval) + 1,] <- c("modFisher01", "lda", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
+Treinando com conjunto de dados de treinamento e testes:
+
+```{r}
+modFisher01 = lda(grupo ~ sumfac, data=train)
+
+predito_test = as.data.frame(predict(modFisher01, test))
+predito_test = predito_test[c(5, 1)]
+cm = confusionMatrix(predito_test$class, test$grupo)
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modFisher01-split", "lda", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
+```
 
 ### Bayes
 
+Treinando o modelo:
+
 ```{r}
-modBayes01 = lda(grupo ~ sumfac, data = tipofacial, prior = c(0.25, 0.50, 0.25))
+modBayes01 = lda(grupo ~ sumfac, data=tipofacial, prior=c(0.25, 0.50, 0.25))
 predito = predict(modBayes01)
 classPred = predito$class
 cm = confusionMatrix(classPred, tipofacial$grupo)
@@ -140,11 +193,25 @@ cm
 # Adiciona as métricas no df
 model_eval[nrow(model_eval) + 1,] <- c("modBayes01-prior 0.25 / 0.50 / 0.25", "lda", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
-
-Naive Bayes
+Treinando com conjunto de dados de treinamento e testes:
 
 ```{r}
-modNaiveBayes01 = naiveBayes(grupo ~ sumfac, data = tipofacial)
+modBayes01 = lda(grupo ~ sumfac, data=train, prior=c(0.25, 0.50, 0.25))
+
+predito_test = as.data.frame(predict(modBayes01, test))
+predito_test = predito_test[c(5, 1)]
+cm = confusionMatrix(predito_test$class, test$grupo)
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modBayes01-prior-0.25/0.50/0.25-split", "lda", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
+```
+### Naive Bayes
+
+Treinando o modelo:
+
+```{r}
+modNaiveBayes01 = naiveBayes(grupo ~ sumfac, data=tipofacial)
 predito = predict(modNaiveBayes01, tipofacial)
 cm = confusionMatrix(predito, tipofacial$grupo)
 cm
@@ -152,8 +219,22 @@ cm
 # Adiciona as métricas no df
 model_eval[nrow(model_eval) + 1,] <- c("modNaiveBayes01", "naiveBayes", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
+Treinando com conjunto de dados de treinamento e testes:
+
+```{r}
+modNaiveBayes01 = naiveBayes(grupo ~ sumfac, data=train)
+
+predito_test = predict(modNaiveBayes01, test)
+cm = confusionMatrix(predito_test, test$grupo)
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modNaiveBayes01-split", "naiveBayes", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
+```
 
 ### Decison tree
+
+Treinando o modelo:
 
 ```{r}
 modArvDec01 = rpart(grupo ~ sumfac, data = tipofacial) 
@@ -170,15 +251,29 @@ cm
 model_eval[nrow(model_eval) + 1,] <- c("modArvDec01", "rpart", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
 
+Treinando com conjunto de dados de treinamento e testes:
+
 ```{r}
-x = 1:nrow(tipofacial)
-plot(tipofacial$sumfac ~ x, col = tipofacial$grupo)
+modArvDec01 = rpart(grupo ~ sumfac, data=train) 
+prp(modArvDec01,  faclen=0, #use full names for factor labels
+    extra=1, #display number of observations for each terminal node
+    roundint=F, #don't round to integers in output
+    digits=5)
+
+predito_test = predict(modArvDec01, test, type = "class")
+cm = confusionMatrix(predito_test, test$grupo)
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modArvDec01-split", "rpart", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
 
 ### SVM
 
+Treinando o modelo:
+
 ```{r}
-modSVM01 = svm(grupo ~ sumfac, data = tipofacial, kernel = "linear")
+modSVM01 = svm(grupo ~ sumfac, data=tipofacial, kernel = "linear")
 predito = predict(modSVM01, type = "class")
 cm = confusionMatrix(predito, tipofacial$grupo)
 
@@ -186,9 +281,24 @@ cm = confusionMatrix(predito, tipofacial$grupo)
 model_eval[nrow(model_eval) + 1,] <- c("modSVM01", "svm", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
 
-### neuralnet
+Treinando com conjunto de dados de treinamento e testes:
 
 ```{r}
+modSVM01 = svm(grupo ~ sumfac, data=train, kernel = "linear") 
+
+predito_test = predict(modSVM01, test, type = "class")
+cm = confusionMatrix(predito_test, test$grupo)
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modSVM01-split", "svm", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
+```
+
+### Neural networks
+
+Treinando o modelo:
+
+```{r cache=TRUE, cache.path="cache/"}
 modRedNeural01 = neuralnet(grupo ~ sumfac, data = tipofacial, hidden = c(2,4,3))
 plot(modRedNeural01)
 
@@ -201,55 +311,92 @@ yhat=data.frame("yhat"= dplyr::case_when(yhat[ ,1:1]==1 ~ "braq",
                                          yhat[ ,2:2]==1 ~ "dolico",
                                          TRUE ~ "meso"))
 
-cm = confusionMatrix(tipofacial$grupo, as.factor(yhat$yhat))
+cm = confusionMatrix(as.factor(yhat$yhat), tipofacial$grupo)
 cm
 
 # Adiciona as métricas no df
 model_eval[nrow(model_eval) + 1,] <- c("modRedNeural01", "neuralnet", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
 
-### KNN
+Treinando com conjunto de dados de treinamento e testes:
 
 ```{r}
-modKnn1_01 = knn3(grupo ~ sumfac, data = tipofacial, k = 1)
-predito = predict(modKnn1_01, tipofacial, type = "class")
-cm = confusionMatrix(predito, tipofacial$grupo)
+modRedNeural01 = neuralnet(grupo ~ sumfac, data=train, hidden = c(2,4,3)) 
+
+ypred = neuralnet::compute(modRedNeural01, test)
+yhat = ypred$net.result
+yhat = round(yhat)
+yhat=data.frame("yhat"= dplyr::case_when(yhat[ ,1:1]==1 ~ "braq", 
+                                         yhat[ ,2:2]==1 ~ "dolico",
+                                         TRUE ~ "meso"))
+
+cm = confusionMatrix(as.factor(yhat$yhat), test$grupo)
 cm
 
 # Adiciona as métricas no df
-model_eval[nrow(model_eval) + 1,] <- c("modKnn1_01-k=1", "knn3", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
+model_eval[nrow(model_eval) + 1,] <- c("modRedNeural01-split", "neuralnet", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
 
-k = 3
+### KNN
+
+Treinando o modelo com $k = 3$:
 
 ```{r}
-modKnn3_01 = knn3(grupo ~ sumfac, data = tipofacial, k = 3)
+modKnn3_01 = knn3(grupo ~ sumfac, data=tipofacial, k=3)
 predito = predict(modKnn3_01, tipofacial, type = "class")
-cm = confusionMatrix(predito, tipofacial$grupo, positive = "0")
+cm = confusionMatrix(predito, tipofacial$grupo, positive="0")
 
 # Adiciona as métricas no df
 model_eval[nrow(model_eval) + 1,] <- c("modKnn3_01-k=3", "knn3", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
 
-k = 5
+Treinando com conjunto de dados de treinamento e testes:
 
 ```{r}
-modKnn5_01 = knn3(grupo ~ sumfac, data = tipofacial, k = 5)
-predito = predict(modKnn5_01, tipofacial, type = "class")
-cm = confusionMatrix(predito, tipofacial$grupo, positive = "0")
+modKnn3_01 = knn3(grupo ~ sumfac, data=train, k=3)
+
+predito_test = predict(modKnn3_01, test, type = "class")
+cm = confusionMatrix(predito_test, test$grupo, positive="0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modKnn3_01-k=3-split", "knn3", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
+```
+
+Treinando o modelo com $k = 5$:
+
+```{r}
+modKnn5_01 = knn3(grupo ~ sumfac, data=tipofacial, k=5)
+predito = predict(modKnn5_01, tipofacial, type="class")
+cm = confusionMatrix(predito, tipofacial$grupo, positive="0")
 cm
 
 # Adiciona as métricas no df
 model_eval[nrow(model_eval) + 1,] <- c("modKnn3_01-k=5", "knn3", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
 ```
-### Avaliando os modelos
+
+Treinando com conjunto de dados de treinamento e testes:
+
+```{r}
+modKnn5_01 = knn3(grupo ~ sumfac, data=train, k=5)
+
+predito_test = predict(modKnn5_01, test, type = "class")
+cm = confusionMatrix(predito_test, test$grupo, positive="0")
+cm
+
+# Adiciona as métricas no df
+model_eval[nrow(model_eval) + 1,] <- c("modKnn5_01-k=5-split", "knn3", cm$overall['Accuracy'], cm$byClass[,1], cm$byClass[,2])
+```
+### Comparando os modelos
 
 ```{r echo=FALSE}
 kable(model_eval) %>%
   kable_styling(latex_options = "striped")
 ```
 
-Todos os modelos tiveram uma performace bem semelhante, sendo que knn, com $k=3$, obteve o melhor resultado em todas as medidas.
+A estratégia de treinamento para o modelo glm foi aplicar dois métodos de treinamento: kfold e dividir o conjunto de dados em 70% para treinamento e 30% para testes. O método de kfold (execução 4 - glm.fit-4) obteve o melhor resultado, superior a simples divisão dos dados (split).
+
+Para os demais modelos o treinamento foi com toda a base e com a divisão 70/30 (split). Em geral, quando os dados foram divididos, os modelos obtiveram um resultado pior, o que sugere que a estratégia em diversificar os dados para treinamento ajuda os modelos a generalizar melhor.
 
 ### Agrupamento
 
@@ -261,16 +408,21 @@ newdata <- data.frame(predict(dummy, newdata = tipofacialS))
 
 d <- dist(newdata, method = "maximum")
 grup = hclust(d, method = "ward.D")
-plot(grup, cex = 0.6)
 
 groups <- cutree(grup, k=3)
-table(groups, tipofacial$grupo)
+
+plot(grup, cex = 0.6)
+rect.hclust(grup , k = 3, border = 2:6)
+abline(h = 3, col = 'red')
+
+kable(sort(groups)) %>%
+  kable_styling(latex_options = "striped")
 ```
 
-
+Pelo dendograma, podemos particionar em 3 clusters:
 
 ```{r}
-km1 = kmeans(newdata, 4)
+km1 = kmeans(newdata, 3)
 p1 = fviz_cluster(km1, data=newdata,
                   palette = c("#2E9FDF", "#FC4E07", "#E7B800", "#E7B700"),
                   star.plot=FALSE,

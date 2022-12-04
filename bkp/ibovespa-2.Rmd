@@ -1,0 +1,621 @@
+```{r warning=FALSE}
+library(quantmod)
+library(xts)
+library(sidrar)
+library(timetk)
+library(tidyverse)
+library(jsonlite)
+```
+
+## Índice IBOVESPA
+
+```{r warning=FALSE}
+# IBOVESPA
+ 
+## Coleta os dados do Yahoo Finance
+ 
+getSymbols("^BVSP", src= "yahoo",
+from= as.Date('2012-11-30'))
+ 
+## Captura os preços de fechamento
+ 
+ibovespa <- Cl(BVSP) %>%
+na.omit() %>%
+`colnames<-`("ibovespa")
+ 
+## Transforma em trimestral
+ 
+ibov_qtr <- apply.quarterly(ibovespa, FUN = mean) %>%
+tk_tbl(preserve_index = TRUE,
+rename_index = "date") %>%
+mutate(date = as.yearqtr(date, type = "%Y%q"))
+ 
+## Cria o objeto ts
+ 
+ibov_qtr_ts <- ts(ibov_qtr$ibovespa, start=c(2012,11), freq = 4)
+```
+
+```{r}
+plot(ibovespa)
+```
+
+Alternativa
+
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+library(scales)
+library(BatchGetSymbols)
+ 
+df_bvsp = BatchGetSymbols('^BVSP', first.date = as.Date('2012-11-30'),
+ last.date = as.Date('2022-11-30'))
+ 
+```
+
+```{r}
+q <- ggplot(df_bvsp$df.tickers, aes(x = ref.date, y = price.close))+
+ geom_line()+
+ scale_y_discrete(limits=c(10000, 20000, 30000, 40000, 50000, 60000,
+ 70000, 80000, 90000, 100000, 110000, 120000, 130000))+
+ scale_x_date(breaks = date_breaks("1 years"),
+ labels = date_format("%Y"))+
+ xlab('')+ylab('Pontos')+
+ labs(title='Índice Bovespa',
+ caption='Fonte: Yahoo Finance.')
+
+q + theme(axis.text.x = element_text(angle = 90))
+```
+
+## Indicadores SELIC e IPCA
+
+A taxa [SELIC](https://www.bndes.gov.br/wps/portal/site/home/financiamento/guia/custos-financeiros/selic/selic) e o índice [IPCA - Índice Nacional de Preços ao Consumidor Amplo - IBGE](https://www.ibge.gov.br/estatisticas/economicas/precos-e-custos/9256-indice-nacional-de-precos-ao-consumidor-amplo.html), ambos mensalizados.
+
+```{r}
+# Importar para o R dados das series.
+lista_datasets <- rbcb::get_series(code = c(ipca = 433, selic = 4390))
+# O objeto retornado é uma lista de dois dataframes:
+str(lista_datasets)
+```
+
+```{r}
+str(lista_datasets$selic)
+```
+
+### Outras fontes
+
+Taxa selic apurada
+
+```{r}
+selic_mensal_anualizada <- fromJSON("https://api.bcb.gov.br/dados/serie/bcdata.sgs.4189/dados?formato=json")
+
+selic_mensal_anualizada <- transform(selic_mensal_anualizada, valor = as.numeric(valor))
+selic_mensal_anualizada <- transform(selic_mensal_anualizada, data = as.Date(data,'%d/%m/%y'))
+
+tail(selic_mensal_anualizada)
+```
+
+
+
+```{r}
+selic_apurada <- read.csv2(file = "../dados/taxa_selic_apurada.csv",
+                           sep=";", dec=",",
+                           col.names = c("data", "taxa", "fator_diario", "finaceiro_real", "operacoes", "media", "mediana", "moda", "dp", "curtose", ""))
+selic_apurada <- transform(selic_apurada, data = as.Date(data,'%d/%m/%Y'))
+```
+
+
+```{r}
+df_selic_meta <- read.csv2(file = "../dados/Meta para a taxa Selic.csv",
+                           sep=";", dec=",",
+                           col.names = c("ref.date", "selic.tax"))
+df_selic_meta <- transform(df_selic_meta, ref.date = as.Date(ref.date,'%Y-%m-%d'))
+
+head(df_selic_meta)
+```
+
+### Join datasets
+
+```{r}
+df_bvsp_close <- df_bvsp$df.tickers %>%
+              select(ref.date, price.close)
+
+df_bvsp_selic <- merge(df_bvsp_close, df_selic_meta, by = 'ref.date', all.x = T)
+```
+
+
+```{r}
+# Vamos então criar apenas um dataset que corresponde a junção dos dois dataframes
+df_st <- left_join(lista_datasets$ipca,
+                   lista_datasets$selic,
+                   by = "date")
+
+# conferindo o novo dataframe criado
+tail(df_st)
+```
+
+```{r}
+# grafico do ipca
+ggplot(df_st, aes(x = date, y = ipca)) +
+  geom_line()
+```
+
+Tendência na série temporal:
+
+```{r}
+df_st %>% 
+  filter(date >= as.Date("2008-01-01")) %>% 
+  ggplot(aes(x = date, y = selic)) +
+  geom_line() +
+  geom_smooth(method = "loess", se = FALSE)
+```
+
+IPCA e SELIC (gráfico)
+
+```{r}
+ggplot(df_st, aes(x = date, y = ipca)) +
+  geom_line() +
+  # adicionar mais uma camada de geom_line
+  geom_line(aes(y = selic), color = "blue")
+```
+
+IPCA e SELIC (dataframe)
+
+```{r}
+df_st_tidy <- df_st %>% 
+  gather(indicador, valor, ipca:selic) %>% 
+  arrange(date)
+
+tail(df_st_tidy)
+```
+
+```{r}
+# antes de proceder com o restante do exercicio, vamos salvar o dataset para
+# o usar nos proximos modulos
+write_rds(df_st_tidy, "series_ipca_selic.rds")
+```
+
+```{r}
+df_st_tidy %>% 
+  ggplot(aes(x = date, y = valor, color = indicador)) +
+  geom_line()
+```
+
+Período antes de 1995
+
+```{r}
+df_st_pos_1995 <- df_st_tidy %>% 
+  filter(date >= as.Date("1995-01-01"))
+
+df_st_pos_1995 %>% 
+  ggplot(aes(x = date, y = valor, color = indicador)) +
+  geom_line()
+```
+
+## IBOVESPA + SELIC
+
+```{r}
+library(ggpubr)
+
+#SELIC
+df_st_pos_2001 <- df_st %>% 
+  filter(date >= as.Date("2001-01-01"))
+
+ibv <- ggplot(bvsp$df.tickers, aes(x = ref.date, y = price.close))+
+ geom_line()+
+ scale_y_discrete(limits=c(20000, 40000, 60000,
+ 80000, 100000, 120000, 140000))+
+ scale_x_date(breaks = date_breaks("5 years"),
+ labels = date_format("%Y"))+
+ xlab('')+
+ ylab('Pontos')+
+ labs(title='Índice Bovespa',
+ caption='Fonte: Yahoo Finance.')
+
+ibv + theme(axis.text.x = element_text(angle = 90))
+
+ind <- ggplot(df_st_pos_2001, aes(x = date, y = selic)) +
+  geom_line() +
+  xlab('') +
+  ylab('%')+
+  labs(title='Taxa Selic', 
+       caption='Fonte: Banco Central.') #+
+  #geom_line(aes(y = selic), color = "blue")
+
+ggarrange(ibv, ind, ncol = 1, nrow = 2)
+```
+
+Pelo dataset
+
+```{r}
+library(dplyr)
+bvsp_close_norm = mean(bvsp$df.tickers$price.close)
+selic_norm = mean(df_st_pos_2001$selic)
+
+df_bvsp <- bvsp$df.tickers %>%
+              select(ref.date, price.close) %>%
+                  rename(date = ref.date) %>%
+                  rename(value = price.close) %>%
+                      add_column(group = "bvsp") 
+df_bvsp <- df_bvsp %>% add_column(norm_value = df_bvsp$value / bvsp_close_norm)
+
+df_selic <- df_st_pos_2001 %>%
+              select(date, selic) %>%
+                  rename(value = selic) %>%
+                      add_column(group = "selic") 
+df_selic <- df_selic %>% add_column(norm_value = df_selic$value / selic_norm)
+
+df_selic_ts <- xts(df_selic$value, df_selic$date)
+
+df_norm <- rbind(df_bvsp, df_selic)
+
+tail(df_norm %>%
+      filter(group == "selic"))
+
+tail(df_norm %>%
+      filter(group == "bvsp"))
+
+ggplot(df_norm, aes(x=date, y=norm_value, group=group, col=group, fill=group)) +
+      geom_point() +
+      geom_smooth(size=1)
+```
+
+Correlação
+
+```{r}
+df_selic_ts <- xts(df_selic$value, df_selic$date)
+
+is.xts(df_selic_ts)
+
+plot(df_selic_ts)
+```
+
+
+```{r}
+df_bvsp_ts <- xts(df_bvsp$value, df_bvsp$date)
+
+is.xts(df_bvsp_ts)
+
+plot(df_bvsp_ts)
+```
+
+## Correlação cruzada ibovespa e selic
+
+CCF - Cross Correlation Function
+
+Dado duas séries temporais $y_t, x_t$
+
+Conjunto de correlações $x_{t+h}$ e $y_t$ onde $h = 0, \pm 1, \pm 2, \pm p$
+
+Um valor negativo de $h$ é a correlação entre a série $x_t$ em um tempo antes de $t$ com a série $y_t$ no tempo $t$.
+
+
+```{r}
+count(df_bvsp)
+count(df_selic)
+```
+
+
+```{r}
+library("ggpubr")
+#ggscatter(my_data, x = "mpg", y = "wt", 
+#          add = "reg.line", conf.int = TRUE, 
+#          cor.coef = TRUE, cor.method = "pearson",
+#          xlab = "Miles/(US) gallon", ylab = "Weight (1000 lbs)")
+
+cor(df_bvsp$value, df_selic$value, method = c("pearson", "kendall", "spearman"))
+cor.test(df_bvsp$value, df_selic$value, method=c("pearson", "kendall", "spearman"))
+```
+
+
+## Expectativa do mercado IPCA
+
+```{r}
+rbcb::get_market_expectations("monthly", "IPCA", end_date = "2022-12-31", `$top` = 5)
+```
+
+## Referências
+
+-   <http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/81-ggplot2-easy-way-to-mix-multiple-graphs-on-the-same-page/>
+-   <https://www.bndes.gov.br/wps/portal/site/home/financiamento/guia/custos-financeiros/selic/selic>
+-   <https://github.com/wilsonfreitas/rbcb>
+-   <http://sillasgonzaga.com/material/cdr/ggplot2.html>
+-   <https://www.ibge.gov.br/indicadores>
+-   <https://finance.yahoo.com/quote/%5EBVSP/components/>
+-   <https://github.com/msperlin/BatchGetSymbols>
+-   <https://analisemacro.com.br/economia/dados-macroeconomicos/baixando-dados-da-bovespa-com-o-r/>
+-   <https://cleitonotavio058.medium.com/usando-o-r-para-obter-indicadores-fundamentalistas-das-empresas-listadas-na-b3-ebe35f701d11>
+
+```{r}
+# FBCF
+ 
+## Coleta os dados do SIDRA e calcula o crescimento interanual
+ 
+fbcf = get_sidra(api="/t/1620/n1/all/v/all/p/all/c11255/93406/d/v583%202") %>%
+dplyr::select(date = "Trimestre (Código)", value = "Valor") %>%
+mutate(date = as.yearqtr(date, format = "%Y%q"),
+dfbcf = (value/lag(value, 4) -1) * 100)
+ 
+## Cria o objeto ts
+ 
+fbcf_ts = ts(fbcf$value, start=c(1996,01), freq=4)
+ 
+dfbcf_ts = (fbcf_ts/stats::lag(fbcf_ts, -4) -1) * 100
+```
+
+```{r}
+fbcf_ts
+```
+
+```{r}
+dfbcf_ts
+```
+
+## Expectativas do COPOM nos contratos de DI1
+
+Ref: http://wilsonfreitas.github.io/posts/expectativas-do-copom-nos-contratos-de-di1.html
+
+```{r}
+install.packages("remotes")
+remotes::install_github("wilsonfreitas/rbmfbovespa")
+```
+
+
+```{r}
+#library(rbmfbovespa)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggthemes)
+theme_set(theme_fivethirtyeight())
+```
+
+```{r}
+download_rbmfbovespa <- function(url) {
+  fdest_dir <- tempdir()
+  fdest <- tempfile(tmpdir = fdest_dir)
+  ix <- download.file(url, fdest, quiet = TRUE)
+  if (ix != 0)
+    stop('Download problems: code = ', ix, ' url = ', url)
+  unz_fname <- unzip(fdest, exdir = fdest_dir)
+  # return unzipped file name
+  unz_fname
+}
+
+download_and_read <- function(x, url, file_template, rbmfbovespa_template) {
+  url_template <- file.path(url, file_template)
+  url <- sprintf(url_template, format(x, '%y%m%d'))
+  unz_fname <- try(download_rbmfbovespa(url))
+  if (is(unz_fname, 'try-error'))
+    return(NULL)
+  read_marketdata(unz_fname, template = rbmfbovespa_template)
+}
+```
+
+```{r}
+dates <- bizdays::bizseq('2016-12-01', '2017-02-17', 'Brazil/ANBIMA')
+indics <- purrr::map(dates, download_and_read, 'ftp://ftp.bmf.com.br/IndicadoresEconomicos', 'ID%s.ex_', 'Indic')
+bd_finals <- purrr::map(dates, download_and_read, 'ftp://ftp.bmf.com.br/ContratosPregaoFinal', 'BF%s.ex_', 'BD_Final')
+indics <- purrr::compact(indics)
+bd_finals <- purrr::compact(bd_finals)
+```
+
+```{r}
+process_files <- function(bdi, indic) {
+  # selecionar contratos futuros de DI1 dos arquivos BD_Final
+  futuro <- bdi %>% filter(cod_mercadoria == 'DI1') %>%
+    arrange(data_vencimento) %>%
+    filter(cot_ult_negocio != 0) %>%
+    filter(row_number() == 1) # selecionar o primeiro vencimento
+  # obter data de referência
+  ref_date <- bdi$data_geracao_arquivo[1]
+  # obter SELIC e CDI (DI1) dos arquivos Indic
+  cdi <- indic %>%
+    filter (cod_indicador == 'DI1', data_geracao_arquivo == ref_date)
+  selic <- indic %>%
+    filter (cod_indicador == 'SEL', data_geracao_arquivo == ref_date)
+  # data.frame com as informações necessárias
+  data.frame(data_referencia = cdi$data_geracao_arquivo,
+             data_vencimento = futuro$data_vencimento,
+             futuro = futuro$cot_ult_negocio,
+             cdi = cdi$valor_indicador,
+             selic = selic$valor_indicador)
+}
+
+ls_data <- purrr::map2(bd_finals, indics, process_files)
+df <- do.call(rbind, ls_data)
+```
+
+```{r}
+ggplot(df %>% select(-data_vencimento, -futuro) %>% gather(taxa, valor, -data_referencia),
+       aes(x = data_referencia, y = valor, colour = taxa, shape = taxa)) +
+  geom_vline(xintercept='2017-01-11' %>% as.Date() %>% as.integer(), linetype='dashed') +
+  scale_x_date() +
+  geom_point()
+```
+
+```{r}
+ggplot(df %>% select(-data_vencimento, -selic) %>% gather(taxa, valor, -data_referencia),
+       aes(x = data_referencia, y = valor, colour = taxa, shape = taxa)) +
+  geom_vline(xintercept='2017-01-11' %>% as.Date() %>% as.integer(), linetype='dashed') +
+  geom_vline(xintercept=c('2017-01-01', '2017-02-01') %>% as.Date() %>% as.integer(), linetype='dotted') +
+  scale_x_date() +
+  geom_point()
+```
+
+```{r}
+calc_taxa_termo <- function(cdi, fut, duf, duc) {
+  f1 <- (1 + cdi/100)^(duc/252)
+  f2 <- (1 + fut/100)^(duf/252)
+  100*((f2/f1)^(252/(duf - duc)) - 1)
+}
+```
+
+```{r}
+df_copom <- df %>% 
+  mutate(
+    du=bizdays::bizdays(data_referencia, data_vencimento, 'Brazil/ANBIMA'),
+    data_copom=as.Date(ifelse(data_referencia <= as.Date('2017-01-11'), '2017-01-11', '2017-02-22'))
+  ) %>%
+  filter(data_vencimento >= data_copom) %>%
+  mutate(
+    du_copom=bizdays::bizdays(data_referencia, data_copom, 'Brazil/ANBIMA'),
+    taxa_termo=calc_taxa_termo(cdi, futuro, du, du_copom)
+  )
+```
+
+```{r}
+ggplot(df_copom %>% select(data_referencia, cdi, futuro, taxa_termo) %>% gather(taxa, valor, -data_referencia),
+       aes(x = data_referencia, y = valor, colour = taxa, shape = taxa)) +
+  geom_vline(xintercept='2017-01-11' %>% as.Date() %>% as.integer(), linetype='dashed') +
+  geom_vline(xintercept=c('2017-01-01', '2017-02-01') %>% as.Date() %>% as.integer(), linetype='dotted') +
+  scale_x_date() +
+  geom_point()
+```
+
+```{r}
+ggplot(data = df_copom, aes(x = data_referencia, y = taxa_termo - cdi)) +
+  geom_point(colour = 'red') +
+  geom_vline(xintercept='2017-01-11' %>% as.Date() %>% as.integer(), linetype='dashed') +
+  geom_hline(yintercept=-0.5)
+```
+
+## Composição de Índices da B3
+
+Ref: https://www.wilsonfreitas.net/posts/2022-06-09-grficos-de-composio-de-ndices-da-b3/, https://github.com/wilsonfreitas/rb3
+
+```{r}
+height <- 15
+width <- 15
+```
+
+```{r}
+ibov_comp <- index_comp_get("IBOV")
+
+ibov_comp
+```
+
+```{r}
+date <- preceding(Sys.Date() - 1, "Brazil/ANBIMA") # last business day
+ch <- cotahist_get(date, "daily")
+
+glimpse(
+  cotahist_get_symbols(ch, ibov_comp)
+)
+```
+
+
+
+```{r}
+top_weight <- function(.data, n = 10) {
+    top_10 <- .data |>
+        arrange(desc(weight)) |>
+        slice_head(n = n) |>
+        select(symbol, weight)
+    total_weight <- sum(top_10$weight)
+    others <- tibble(
+        symbol = "Others",
+        weight = 1 - total_weight
+    )
+
+    bind_rows(top_10, others) |>
+        mutate(cum_weight = cumsum(weight)) |>
+        mutate(
+            ymax = cum_weight,
+            ymin = c(0, head(cum_weight, n = -1)),
+            label_pos = (ymax + ymin) / 2,
+            label = paste0(symbol, "\n", scales::percent(weight)),
+            symbol = factor(symbol, ordered = TRUE)
+        )
+}
+
+ggdonut <- function(.data, index_name) {
+    ggplot(.data, aes(
+        ymax = ymax, ymin = ymin,
+        xmax = 4, xmin = 3,
+        fill = symbol
+    )) +
+        geom_rect(colour = "white") +
+        geom_label(
+            x = 4.5, aes(y = label_pos, label = label), size = 3
+        ) +
+        annotate(
+            "text",
+            x = 0, y = 0, label = index_name, size = 16, colour = "grey",
+            fontface = 2
+        ) +
+        coord_polar(theta = "y") +
+        scale_fill_brewer(palette = "Set3") +
+        scale_color_brewer(palette = "Set3") +
+        xlim(c(0, 4)) +
+        theme_void() +
+        theme(legend.position = "none") +
+        labs(
+            caption = "Source: B3 (data imported using \U1F4E6 rb3) - wilsonfreitas"
+        )
+}
+```
+
+```{r}
+index_name <- "IBOV"
+index_weights_get(index_name) |>
+    top_weight() |>
+    ggdonut(index_name)
+```
+
+
+
+
+![metricas - definições matemáticas](pics/metrics-1.png)
+
+![relação erro e acurácia](pics/metrics-2.png)
+
+
+
+## Referências
+
+-   <http://www.sthda.com/english/articles/24-ggpubr-publication-ready-plots/81-ggplot2-easy-way-to-mix-multiple-graphs-on-the-same-page/>
+-   <https://www.bndes.gov.br/wps/portal/site/home/financiamento/guia/custos-financeiros/selic/selic>
+-   <https://github.com/wilsonfreitas/rbcb>
+-   <http://sillasgonzaga.com/material/cdr/ggplot2.html>
+-   <https://www.ibge.gov.br/indicadores>
+-   <https://finance.yahoo.com/quote/%5EBVSP/components/>
+-   <https://github.com/msperlin/BatchGetSymbols>
+-   <https://analisemacro.com.br/economia/dados-macroeconomicos/baixando-dados-da-bovespa-com-o-r/>
+-   <https://cleitonotavio058.medium.com/usando-o-r-para-obter-indicadores-fundamentalistas-das-empresas-listadas-na-b3-ebe35f701d11>
+
+```{r}
+# FBCF
+ 
+## Coleta os dados do SIDRA e calcula o crescimento interanual
+ 
+fbcf = get_sidra(api="/t/1620/n1/all/v/all/p/all/c11255/93406/d/v583%202") %>%
+dplyr::select(date = "Trimestre (Código)", value = "Valor") %>%
+mutate(date = as.yearqtr(date, format = "%Y%q"),
+dfbcf = (value/lag(value, 4) -1) * 100)
+ 
+## Cria o objeto ts
+ 
+fbcf_ts = ts(fbcf$value, start=c(1996,01), freq=4)
+ 
+dfbcf_ts = (fbcf_ts/stats::lag(fbcf_ts, -4) -1) * 100
+```
+
+```{r}
+fbcf_ts
+```
+
+```{r}
+dfbcf_ts
+```
+
+
+
+## References
+
+- https://www.r-bloggers.com/2021/10/cross-validation-in-r-with-example/
+- http://www.sthda.com/english/articles/38-regression-model-validation/158-regression-model-accuracy-metrics-r-square-aic-bic-cp-and-more/
+- [Índice Ibovespa](https://www.b3.com.br/pt_br/market-data-e-indices/indices/indices-amplos/ibovespa.htm)
+- [Análise das Atas do COPOM com text mining](https://analisemacro.com.br/data-science/analise-das-atas-do-copom-com-text-mining/)
+- [Mineração de textos do COPOM: criando um indicador de sentimentos](https://analisemacro.com.br/data-science/mineracao-de-textos-do-copom-criando-um-indicador-de-sentimentos/)
+- https://python.plainenglish.io/calculate-weighted-average-cost-of-capital-wacc-using-python-99ddc3c396c8
+- https://smilganir.medium.com/spaghetti-charts-suggested-alternative-a-trellis-chart-60374a629390
+- https://medium.com/@tilaye.henok/beyond-correlation-causal-inference-955ce155e0c6
