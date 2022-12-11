@@ -1,0 +1,89 @@
+# SELIC - Sistema Especial de Liquidação e de Custódia
+
+A taxa Selic representa os juros básicos da economia brasileira. Os movimentos da Selic influenciam todas as taxas de juros praticadas no país – sejam as que um banco cobra ao conceder um empréstimo, sejam as que um investidor recebe ao realizar uma aplicação financeira.
+
+A Selic tem esse nome por conta do Sistema Especial de Liquidação e de Custódia, um sistema administrado pelo Banco Central em que são negociados títulos públicos federais. A taxa média registrada nas operações feitas diariamente nesse sistema equivale à taxa Selic.
+
+Mas de que tipo de operações estamos falando? São empréstimos de curtíssimo prazo – com vencimento em apenas um dia – realizados entre as instituições financeiras, que têm títulos públicos federais dados como garantia.
+
+A taxa média desses negócios, apurada todos os dias, é chamada de Selic “efetiva”. O nome diz tudo: é o percentual de juros que efetivamente está sendo praticado nesse mercado. Mas existe ainda a Selic “meta” – e é provavelmente sobre essa que você costuma ouvir falar com mais frequência no seu dia a dia. [1]
+
+A Taxa Meta Selic, também é conhecida como taxa básica de juros. É a taxa oficial de juros brasileira, definida pelo Banco Central a cada 45 dias.
+
+Além disso, ela foi criado no Brasil em março de 1999, e é considerada a taxa que ajuda controlar a inflação. justamente pela relação direta com a economia, por exemplo: Quando a inflação sobe, o governo sobe a taxa meta selic, fazendo com que o dinheiro fique mais caro. Impactando, assim, diretamente no consumo, portanto, quando os juros sobe, a inflação tende a cair.
+
+A sigla SELIC se refere ao Sistema Especial de Liquidação e Custódia. Ela é definida por empréstimos de dinheiro entre instituições financeiras, utilizada para financiamento de transações diárias com títulos públicos federais como garantia, registradas no Banco Central.
+
+Em segundo lugar, os bancos comunicam entre si para pegar empréstimo, portanto em um determinado dia, o Bradesco está precisando de capital para financiar alguma operação. O Santander, por sua vez, pode emprestar esse capital para o Bradesco, com prazo de empréstimo de 1 DIA e com garantia um título lastreado no Tesouro Nacional.
+
+Essa taxa desde 2013 vale Meta taxa Selic – 0,10, portanto, no cenário atual a Taxa Meta Selic está em 2,25%, e a Taxa Selic em 2,15% ao ano.
+
+```{r echo=FALSE}
+library(GetBCBData) # CRAN v0.7
+library(ipeadatar) # CRAN v0.1.5
+library(sidrar) # CRAN v0.2.7 
+library(dplyr) # CRAN v1.0.7 
+library(stringr) # CRAN v1.4.0
+library(readxl)
+```
+
+
+```{r message=FALSE}
+META_SELIC = 432
+SELIC_EFETIVA = 1178
+# Coletar dados da SELIC no SGS/BCB
+dados_sgs_selic <- GetBCBData::gbcbd_get_series(
+  id = c(META_SELIC, SELIC_EFETIVA),
+  first.date = "2020-01-01",
+  last.date = Sys.Date(),
+  format.data = "wide"
+)
+tail(dados_sgs_selic)
+```
+
+## Reuniões COPOM
+
+```{r}
+df_selic <- read_excel("../dados/reunioes-copom-2022.xlsx")
+
+head(df_selic)
+```
+
+```{r}
+df_selic <- read.csv2(file = "../dados/reunioes-copom-2022.csv",
+                           sep=";", dec=",")
+df_selic <- transform(df_selic, reuniao_data = as.Date(reuniao_data,'%Y-%m-%d'))
+df_selic <- transform(df_selic, vigencia_inicio = as.Date(vigencia_inicio,'%Y-%m-%d'))
+df_selic <- transform(df_selic, vigencia_fim = as.Date(vigencia_fim,'%Y-%m-%d'))
+
+tail(df_selic)
+```
+
+### Vies
+
+Utilização da faculdade para alterar a meta para a Taxa SELIC entre reuniões do COPOM.
+
+```{r}
+df_selic %>% filter(nota == 'alta')
+```
+```{r}
+ggplot(df_selic, aes(x = reuniao_data, y = meta_selic_ano))+
+ geom_line()+
+ scale_x_date(breaks = date_breaks("1 years"),
+ labels = date_format("%Y"))+
+ xlab('')+ylab('%')+
+ labs(title='Meta taxa selic',
+ caption='Fonte: Banco Central do Brasil.')+
+ geom_line() +
+ geom_smooth(method = "loess", se = FALSE)+
+ theme(axis.text.x = element_text(angle = 90))
+```
+```{r}
+
+```
+
+
+## Referências
+
+1. https://www.infomoney.com.br/guias/taxa-selic/
+2. https://analisemacro.com.br/data-science/analise-das-atas-do-copom-com-text-mining/

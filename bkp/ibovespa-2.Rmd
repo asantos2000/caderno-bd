@@ -309,7 +309,7 @@ cor.test(df_bvsp$value, df_selic$value, method=c("pearson", "kendall", "spearman
 ## Expectativa do mercado IPCA
 
 ```{r}
-rbcb::get_market_expectations("monthly", "IPCA", end_date = "2022-12-31", `$top` = 5)
+rbcb::get_market_expectations("monthly", "Selic", start_date = "2002-01-01",  end_date = "2022-12-31")
 ```
 
 ## Referências

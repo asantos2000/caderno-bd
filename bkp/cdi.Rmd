@@ -1,0 +1,87 @@
+# CDI
+
+O CDI (Certificado de depósito Interfinanceiro), dentre as inúmeras siglas, podemos considerá-lo como um dos mais famosos. 
+
+O CDI tem o mesmo raciocínio da Taxa Selic, que é o empréstimo de dinheiro entre instituições financeiras, mas temos uma grande diferença na GARANTIA, pelo fato de ser emitido por uma empresa privada.
+
+Em segundo lugar, a garantia desse ativo é o próprio título CDI, registrados na B3, diferenciando-se da Selic, onde a garantia é o Tesouro Nacional.
+
+Nos empréstimos realizados entre os bancos por meio de CDIs há cobrança de juros, essa taxa é calculada pela bolsa de valores, e a taxa média de juros praticada nos Certificados Interbancários de todo mercado financeiro, divulgada diariamente, é conhecida como “Taxa do CDI”.
+
+```{r echo=FALSE, message=FALSE}
+library(GetBCBData) # CRAN v0.7
+library(ipeadatar) # CRAN v0.1.5
+library(sidrar) # CRAN v0.2.7 
+library(dplyr) # CRAN v1.0.7 
+library(stringr) # CRAN v1.4.0
+```
+
+
+```{r message=FALSE}
+CDI_ANO = 4389 # Taxa de juros - CDI anualizada base 252 - % a.a.
+CDI_ACC_ANO = 4392 # Taxa de juros - CDI acumulada no mês anualizada base 252 - % a.a.
+# Coletar dados da SELIC no SGS/BCB
+dados_sgs_cdi <- GetBCBData::gbcbd_get_series(
+  id = c(CDI_ANO, CDI_ACC_ANO),
+  first.date = "2020-01-01",
+  last.date = Sys.Date(),
+  format.data = "wide"
+)
+
+tail(dados_sgs_cdi)
+```
+
+## Selic x CDI
+
+Em geral, a Selic e o CDI andam muito próximos, com o CDI variando alguns décimos percentuais (geralmente para baixo) em relação à Selic.
+
+A diferença entre as duas acontece por conta de suas naturezas. Enquanto o CDI tem a natureza exclusivamente privada, sendo guia para empréstimos entre os bancos e com títulos de garantia próprios, a Selic tem um viés público. Isso por ser uma taxa usada pelo governo e por ter títulos públicos como suas garantias para os empréstimos aos bancos.
+
+Para o investidor, o que importa é saber o seguinte: quando a Selic sobe, o CDI tende a subir também. A lógica disso é que, da mesma forma que as pessoas vão ter que pagar mais juros para os bancos, os bancos também vão ter que pagar mais juros para os empréstimos que tomam. Está tudo relacionado!
+
+Com isso, a Selic subindo é sinal de dividendos maiores para investimentos em renda fixa. Em maio de 2022, por exemplo, o Copom aumentou a Selic pela décima vez consecutiva e ela chegou a 12,75% ao ano. Com isso, muitos economistas passaram a recomendar ao público o investimento no Tesouro Direto (cujo rendimento é atrelado diretamente à Selic) e também em CDBs (cujo rendimento é atrelado ao CDI). Para saber mais sobre os diferentes tipos, leia o post Renda fixa: o que é e quais são os principais tipos de investimento. [2]
+
+```{r message=FALSE}
+META_SELIC = 432
+CDI_ANO = 4389 # Taxa de juros - CDI anualizada base 252 - % a.a.
+# Coletar dados da SELIC no SGS/BCB
+dados_sgs <- GetBCBData::gbcbd_get_series(
+  id = c(META_SELIC, CDI_ANO),
+  first.date = "2000-01-01",
+  last.date = Sys.Date(),
+  format.data = "wide"
+)
+
+tail(dados_sgs)
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(dados_sgs, aes(x=ref.date)) +
+  
+  geom_line(aes(y=`id = 432`), colour = "blue") + 
+  geom_line(aes(y=`id = 4389`), colour = "red") +
+  
+  scale_y_continuous(
+    name = "selic",
+    sec.axis = sec_axis(~., name="cdi")
+  )
+```
+
+```{r}
+correlacao = cor(dados_sgs$`id = 432`, dados_sgs$`id = 4389`, use = "pairwise.complete.obs", method =c("pearson"))
+
+correlacao
+```
+
+Correlação de Pearson é `r correlacao`, indicando uma relação muito próxima.
+
+
+
+## Referências
+
+1. https://marcusnunes.me/posts/baixando-dados-do-banco-central-com-r-uma-aplicacao-utilizando-dolar-e-salario-minimo/
+2. https://vivomoney.com.br/blog/falando-em-dinheiro/qual-a-diferenca-entre-taxa-selic-e-cdi
+3. https://analisemacro.com.br/data-science/como-importar-dados-do-banco-central-ipeadata-e-sidra-no-r/
+4. https://cran.r-project.org/web/packages/GetBCBData/vignettes/GetBCBData-vignette.html

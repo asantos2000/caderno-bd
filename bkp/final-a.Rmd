@@ -1,0 +1,649 @@
+```{r}
+# Limpando as variáveis do ambiente
+rm(list = ls())
+```
+
+
+```{r warning=FALSE, message=FALSE}
+library(quantmod)
+library(xts)
+library(sidrar)
+library(timetk)
+library(tidyverse)
+library(jsonlite)
+library(ggplot2)
+library(scales)
+library(BatchGetSymbols)
+library(dplyr)
+library(rb3)
+library(pastecs)
+library(ggpubr)
+library(bizdays)
+#library(patchwork)
+library(gridExtra)
+library(GGally)
+library(readxl)
+
+#conflicts(detail = TRUE)
+```
+
+```{r message=FALSE, warning=FALSE}
+first_date = as.Date('2001-12-19') # data reunião 66 do COPOM
+last_date = as.Date('2022-11-25')
+eval_period = last_date - first_date
+
+df_bvsp = BatchGetSymbols('^BVSP', first.date = first_date,
+ last.date = last_date)
+```
+
+## Índice IBOVESPA
+
+O período de análise será de `r floor(eval_period / 365)` anos, de `r first_date` até `r last_date`.
+
+O comportamento do índice bovespa neste período foi:
+
+```{r message=FALSE, warning=FALSE}
+bov_plot <- ggplot(df_bvsp$df.tickers, aes(x = ref.date, y = price.adjusted))+
+ geom_line()+
+ scale_y_discrete(limits=c(10000, 20000, 30000, 40000, 50000, 60000,
+ 70000, 80000, 90000, 100000, 110000, 120000, 130000))+
+ scale_x_date(breaks = date_breaks("1 years"),
+ labels = date_format("%Y"))+
+ xlab('')+ylab('Pontos')+
+ labs(title='Índice Bovespa',
+ caption='Fonte: Yahoo Finance.')+
+ geom_line() +
+ geom_smooth(method = "loess", se = FALSE) +
+ theme(axis.text.x = element_text(angle = 90)
+)
+```
+
+## Indicador SELIC
+
+A meta da taxa [SELIC](https://www.bcb.gov.br/estatisticas/grafico/graficoestatistica/metaselic) diária.
+
+
+```{r}
+df_selic_meta <- read.csv2(file = "../dados/Taxa de juros - Selic - fixada pelo Comitê de Política Monetária.csv",
+                           sep=";", dec=",",
+                           colClasses = c("character", "numeric", "NULL"),
+                           col.names = c("ref.date", "selic.tax", ""))
+df_selic_meta <- transform(df_selic_meta, ref.date = as.Date(ref.date,'%d/%m/%Y'))
+
+df_selic_meta <- na.omit(df_selic_meta) %>% 
+                    filter(ref.date >= first_date)
+
+tail(df_selic_meta)
+
+#df_selic_meta %>% filter(ref.date >= "2002-12-27")
+```
+
+E o comportamento no período foi:
+
+```{r}
+selic_plot <- ggplot(df_selic_meta, aes(x = ref.date, y = selic.tax))+
+ geom_line()+
+ scale_x_date(breaks = date_breaks("1 years"),
+ labels = date_format("%Y"))+
+ xlab('')+ylab('%')+
+ labs(title='Meta taxa selic',
+ caption='Fonte: Banco Central do Brasil.')+
+ geom_line() +
+ geom_smooth(method = "loess", se = FALSE)+
+ theme(axis.text.x = element_text(angle = 90))
+```
+
+## Pesquisa Focus
+
+```{r}
+df_selic_focus = rbcb::get_market_expectations("annual", "Selic",start_date = "2002-01-01",  end_date = "2022-12-31")
+
+df_selic_focus <- df_selic_focus %>%
+                      dplyr::select(Data, DataReferencia, Minimo, Maximo, numeroRespondentes) %>%
+                          filter(format(Data, "%Y") == DataReferencia)
+
+names(df_selic_focus)[1] = "ref.date"
+names(df_selic_focus)[2] = "ref.year"
+names(df_selic_focus)[3] = "min"
+names(df_selic_focus)[4] = "max"
+names(df_selic_focus)[5] = "respondents"
+
+tail(df_selic_focus)
+```
+
+## Reuniões COPOM
+
+```{r}
+df_reuniao_copom <- read_excel("../dados/reunioes-copom-2022.xlsx")
+
+df_reuniao_copom <- df_reuniao_copom %>%
+                         dplyr::select(reuniao_n, extraordinaria, reuniao_data, nota, vigencia_inicio, vigencia_fim, meta_selic_ano)
+
+df_reuniao_copom$reuniao_data = as.Date(df_reuniao_copom$reuniao_data)
+df_reuniao_copom$vigencia_inicio = as.Date(df_reuniao_copom$vigencia_inicio)
+df_reuniao_copom$vigencia_fim = as.Date(df_reuniao_copom$vigencia_fim)
+
+names(df_reuniao_copom)[1] = "meeting.number"
+names(df_reuniao_copom)[2] = "extra"
+names(df_reuniao_copom)[3] = "ref.date"
+names(df_reuniao_copom)[4] = "note"
+names(df_reuniao_copom)[5] = "term.start"
+names(df_reuniao_copom)[6] = "term.end"
+names(df_reuniao_copom)[7] = "decision.target"
+
+head(df_reuniao_copom)
+```
+
+
+## Ibovespa e selic
+
+```{r message=FALSE, warning=FALSE}
+grid.arrange(bov_plot, selic_plot, ncol=2)
+```
+
+### Unindo os conjuntos de dados
+
+```{r}
+# Usando apenas valor ajustado
+df_bvsp_close <- df_bvsp$df.tickers %>%
+                  dplyr::select(ref.date, price.adjusted)
+
+df_bvsp_selic <- merge(df_bvsp_close, df_selic_meta, by = 'ref.date', all.x = T)
+
+df_bvsp_selic <- merge(df_bvsp_selic, df_selic_focus, by = 'ref.date', all.x = T)
+
+df_bvsp_selic <- df_bvsp_selic %>% 
+                    fill(c(selic.tax, ref.year, `min`, `max`), .direction = "downup")
+
+df_bvsp_selic$diff.meta.max = with(df_bvsp_selic, max - selic.tax)
+
+df_bvsp_selic <- merge(df_bvsp_selic, df_reuniao_copom, by = 'ref.date', all.x = T)
+
+df_bvsp_selic <- df_bvsp_selic %>% 
+                    fill(c(decision.target, meeting.number, term.start, term.end), .direction = "downup")
+
+round(stat.desc(df_bvsp_selic))
+```
+
+```{r}
+df_not_expected <- df_bvsp_selic[order(-df_bvsp_selic$meeting.number), ] %>% 
+                     filter(!is.na(meeting.number) & diff.meta.max < 0) %>%
+                       select(meeting.number, ref.date, diff.meta.max, price.adjusted) %>%
+                          group_by(meeting.number) %>%
+                            slice(which.min(ref.date))
+
+df_not_expected
+```
+
+```{r message=FALSE, warning=FALSE}
+temp <- df_bvsp_selic[order(-df_bvsp_selic$meeting.number), ] %>% 
+          filter(!is.na(meeting.number)) %>%
+            select(ref.date, diff.meta.max)
+
+ggplot(temp, aes(x = ref.date, y = diff.meta.max))+
+ geom_line()+
+ labs(title='Variação expectativa meta vs focus',
+ caption='Fonte: autor.')+
+ geom_line() +
+ geom_smooth(method = "loess", se = FALSE)+
+ theme(axis.text.x = element_text(angle = 90))+
+ geom_line(aes(y = 0), color = "red", linetype = "dotted")
+```
+
+Reuniões cuja a meta foi superior ao máximo esparado pelos respondentes da pesquisa focus.
+
+```{r}
+temp %>%
+  filter(diff.meta.max < 0)
+```
+
+Retorno sobre o preço ajustado do ibovespa entre as reuniões do copom.
+
+```{r message=FALSE, warning=FALSE}
+ts_temp <- xts(temp[,-1], order.by=as.Date(temp[,1], "%Y-%m-%d"))
+names(ts_temp) <- "price.adjusted"
+
+ret_simples <- diff(log(ts_temp$price.adjusted))
+
+ggplot(ret_simples, aes(x = Index, y = price.adjusted))+
+ geom_line()+
+ labs(title=glue::glue('Ibovespa na data das reuniões'),
+ caption='Fonte: autor.')+
+ geom_line() +
+ geom_smooth(method = "loess", se = FALSE)+
+ theme(axis.text.x = element_text(angle = 90))
+```
+
+Preço Ibovespa ajustado alguns dias antes e depois da reunião do copom.
+
+```{r message=FALSE, warning=FALSE}
+p <- list()
+offset <- 10
+
+for (row in 1:nrow(df_not_expected)) {
+  meeting_date = df_not_expected[row, ]$ref.date# df_not_expected[row, "ref.date"]
+  start = meeting_date - offset
+  end = meeting_date + offset
+  temp <- df_bvsp_selic %>%
+            filter(ref.date >= start & ref.date <= end) %>%
+              select(ref.date, price.adjusted)
+  
+  print(ggplot(temp, aes(x = ref.date, y = price.adjusted))+
+   geom_line()+
+   labs(title=glue::glue('Variação preço fechamento -${offset}d, reunião de ${meeting_date}, +${offset}d'),
+   caption='Fonte: autor.')+
+   geom_line() +
+   geom_smooth(method = "loess", se = FALSE)+
+   theme(axis.text.x = element_text(angle = 90))+
+   geom_line(aes(x = meeting_date), color = "red", linetype = "dotted"))
+}
+```
+
+#### Salvando o conjunto de dados
+
+```{r}
+# antes de proceder com o restante do exercicio, vamos salvar o dataset para
+# o usar nos proximos modulos
+write_rds(df_bvsp_selic, "../dados/series_bvsp_selic_10.rds")
+```
+
+## Correlação ibovespa e selic
+
+```{r}
+library(xts)
+
+ts_df_bvsp_selic <- xts(df_bvsp_selic[,-1], order.by=as.Date(df_bvsp_selic[,1], "%Y-%m-%d"))
+
+ret_simples <- diff(log(ts_df_bvsp_selic$price.adjusted))
+
+summary(coredata(ret_simples))
+
+cat(which.min(ret_simples), "\n")
+
+cat(ret_simples[which.min(ret_simples)], "\n")
+```
+
+```{r}
+hist(ret_simples, breaks = 100, main = "Histograma do retorno simples", xlab = "%")
+```
+
+
+```{r}
+df_bvsp_selic_subprime <- window(ts_df_bvsp_selic, start='2004-01-01', end='2007-12-31')
+df_bvsp_selic_subprime[which.max(df_bvsp_selic_subprime)]
+```
+
+Log retorno
+
+```{r}
+logRet_selic = ts(diff(log(df_bvsp_selic$selic.tax)))
+
+plot(logRet_selic)
+```
+
+```{r}
+logRet_bov = ts(diff(log(df_bvsp_selic$price.adjusted)))
+
+plot(logRet_bov)
+```
+
+
+```{r warning=FALSE}
+bvsp_norm <- sd(df_bvsp_selic$price.adjusted, na.rm=TRUE)
+selic_norm <- sd(df_bvsp_selic$selic.tax, na.rm=TRUE)
+
+df_bvsp_selic$price.adjusted.norm <- log(df_bvsp_selic$price.adjusted)
+df_bvsp_selic$selic.tax.norm <- log(df_bvsp_selic$selic.tax)
+
+ggplot(df_bvsp_selic, aes(x=ref.date)) +
+  
+  geom_line(aes(y=price.adjusted.norm), size=2, color="blue", na.rm=TRUE, alpha=.6) + 
+  stat_smooth(size=2, aes(y=price.adjusted.norm), color="green", size=1) +
+  geom_line(aes(y=selic.tax.norm), size=2, color="red", na.rm=TRUE, alpha=.6) +
+  stat_smooth(size=2, aes(y=selic.tax.norm), color = "green") +
+
+  scale_y_continuous(
+    
+    # Features of the first axis
+    name = "bvsp",
+    
+    # Add a second axis and specify its features
+    sec.axis = sec_axis(~./selic_norm, name="selic")
+  ) +
+
+#ggtitle("Ibovespa vs Selic") +
+
+ labs(title = "Ibovespa vs Selic",        
+     subtitle = 'Relação entre ativos e indicadores macroeconomicos',
+     x = 'Anos',
+     fill = '') 
+```
+
+
+## Decomposição anual
+
+TODO
+
+## Análise de _outliers_
+
+TODO
+
+## Correlação cruzada ibovespa e selic
+
+CCF - Cross Correlation Function
+
+Dado duas séries temporais $y_t, x_t$
+
+Conjunto de correlações $x_{t+h}$ e $y_t$ onde $h = 0, \pm 1, \pm 2, \pm p$
+
+Um valor negativo de $h$ é a correlação entre a série $x_t$ em um tempo antes de $t$ com a série $y_t$ no tempo $t$.
+
+
+```{r}
+# https://www.lobdata.com.br/2020/09/15/how-to-perform-correlation-analysis-in-time-series-data-using-r/
+
+df_bvsp_selic_long <- df_bvsp_selic %>% 
+  pivot_longer(cols = c(price.adjusted, selic.tax), names_to = "names", values_to = "value")
+```
+
+```{r}
+# the series
+df_bvsp_selic_long %>% 
+  plot_time_series(.date_var = ref.date,
+                   .value = value,
+                   .facet_vars = names)
+```
+```{r}
+# acf/pacf plots
+df_bvsp_selic_long %>%
+  group_by(names) %>% 
+  plot_acf_diagnostics(.date_var = ref.date,
+                       .value = value,
+                       .show_white_noise_bars = T)
+```
+
+```{r}
+# CCF plot
+df_bvsp_selic %>% 
+  plot_acf_diagnostics(.date_var = ref.date,
+                       .value = price.adjusted.norm,
+                       .ccf_vars = selic.tax.norm,
+                       .show_ccf_vars_only = T)
+```
+
+
+```{r}
+stat.desc(df_bvsp_selic)
+```
+
+
+```{r}
+cor(df_bvsp_selic$price.adjusted, df_bvsp_selic$selic.tax, method = c("pearson"))
+```
+log
+
+```{r}
+cor(df_bvsp_selic$price.adjusted.norm, df_bvsp_selic$selic.tax.norm, method = c("pearson"))
+```
+
+Teste correlação
+
+```{r}
+cor.test(df_bvsp_selic$price.adjusted, df_bvsp_selic$selic.tax, method=c("pearson"))
+```
+Log
+
+```{r}
+cor.test(df_bvsp_selic$price.adjusted.norm, df_bvsp_selic$selic.tax.norm, method=c("pearson"))
+```
+
+```{r}
+ibx <- df_bvsp_selic$price.adjusted.norm
+selic <- df_bvsp_selic$selic.tax.norm
+  
+mat <- cbind(ibx, selic)
+  
+X <- cov(mat)
+
+#print(X)
+
+#print(cor(mat))
+  
+# covariance matrix to correlation matrix
+print(cov2cor(X))
+```
+
+
+```{r}
+ccf(df_bvsp_selic$price.adjusted.norm, df_bvsp_selic$selic.tax.norm)
+```
+
+```{r}
+# Quick display of two cabapilities of GGally, to assess the distribution and correlation of variables 
+
+
+# Nice visualization of correlations
+ggcorr(df_bvsp_selic, method = c("pairwise", "pearson"), label = TRUE, label_alpha = TRUE) 
+```
+
+```{r}
+ggpairs(df_bvsp_selic, columns = 4:5) 
+```
+
+## Identificação
+
+Ref: https://rstudio-pubs-static.s3.amazonaws.com/439224_5d5b31e42607449aa2aab35b6e7e6884.html
+
+Para visualizar a relação entre as séries, ploto o correlograma cruzado delas. Em seguida apresento as matrizes de correlação das seis primeiras defasagens e uma representação pictórica, que resume a informação exibida nestas primeiras defasagens.
+
+```{r}
+ribov <- ts(diff(log(df_bvsp_selic$price.adjusted)))
+rselic <- ts(diff(log(df_bvsp_selic$selic.tax)))
+
+plot(ribov)
+plot(rselic)
+```
+
+
+```{r}
+x <- ts.intersect(ribov, rselic)
+
+# ACF das séries (correlograma cruzado)
+acf(x, xlab ="", ylab = "")
+```
+
+```{r}
+# Grava os valores estimados das correlações
+a <- acf(x, plot = FALSE)
+correl <- matrix(a$acf, ncol = 4)
+
+ro <- list()
+for (i in 2:7){# Note que o loop começa em 2, pois o valor 1 corresponde à matriz de correlação de ordem 0
+  
+  ro_atual <- list(matrix(correl[i,], ncol = 2))
+  ro <- c(ro, ro_atual)
+}
+ro
+```
+```{r}
+library(vars)
+
+# Seleciona a ordem do modelo VAR
+VARselect(x, lag.max = 8, type = "const")$selection
+
+VARselect(x, lag.max = 8, type = "trend")$selection
+
+VARselect(x, lag.max = 8, type = "both")$selection
+
+VARselect(x, lag.max = 8, type = "none")$selection
+```
+```{r}
+summary(fit <- VAR(x, p = 1, type = "none"))
+```
+
+```{r}
+## Análise de resíduos
+# Modelo 1: VAR(1)
+# ACF dos resíduos
+acf(resid(fit), xlab = "", ylab = "")
+```
+
+```{r}
+# ACF do quadrado dos resíduos
+acf(resid(fit)^2, xlab = "", ylab = "")
+```
+
+```{r}
+library(kableExtra)
+
+# Teste Portmanteau para diversas ordens
+p <- c(); chi <- c(); graus <- c(); ordem <- c()
+# Loop para calcular o teste em diversas ordens
+for (i in 1:8){
+  p[i] <- as.numeric(serial.test(fit, lags.pt = i+3, type = "PT.asymptotic")$serial$p.value)
+  chi[i] <- as.numeric(serial.test(fit, lags.pt = i+3, type = "PT.asymptotic")$serial$statistic)
+  graus[i] <- as.numeric(serial.test(fit, lags.pt = i+3, type = "PT.asymptotic")$serial$parameter)
+  ordem[i] <- i+3
+}
+# Agrupa as informações num data.frame
+PT <- data.frame(ordem = ordem, graus_liberdade = graus, estatística = chi, p_valor = p)
+kable(PT, align = 'c')
+```
+
+```{r}
+# Teste Breusch-Godfrey para diversas ordens
+p <- c(); LM <- c(); graus <- c(); ordem <- c()
+# Loop para calcular o teste para diversas ordens
+for (i in 1:10){
+  p[i] <- as.numeric(serial.test(fit, lags.bg = i, type = "BG")$serial$p.value)
+  LM[i] <- as.numeric(serial.test(fit, lags.bg = i, type = "BG")$serial$statistic)
+  graus[i] <- as.numeric(serial.test(fit, lags.bg = i, type = "BG")$serial$parameter)
+  ordem[i] <- i
+}
+
+BG <- data.frame(ordem = ordem, graus_liberdade = graus, estatística = LM, p_valor = p)
+kable(BG, align = 'c', col.names = c("Ordem", "Graus de liberdade", "Estatística", "P-valor"), caption = "Resultados do teste Breusch-Godfrey")
+```
+
+```{r}
+# Teste ARCH (multivariado) para diversas ordens
+p <- c(); chi <- c(); graus <- c(); ordem <- c()
+# Loop para calcular o teste para diversas ordens
+for (i in 1:12){
+  p[i] <- as.numeric(arch.test(fit, lags.multi = i)$arch.mul$p.value)
+  chi[i] <- as.numeric(arch.test(fit, lags.multi = i)$arch.mul$statistic)
+  graus[i] <- as.numeric(arch.test(fit, lags.multi = i)$arch.mul$parameter)
+  ordem[i] <- i
+}
+
+ARCH <- data.frame(ordem = ordem, graus_liberdade = graus, estatística = chi, p_valor = p)
+kable(ARCH, align = 'c', col.names = c("Ordem", "Graus de liberdade", "Estatística", "P-valor"), caption = "Resultados do teste ARCH-LM")
+
+```
+
+```{r}
+summary(fit2 <- VAR(x, p = 6, type = "none"))
+```
+```{r}
+# Segundo modelo: VAR(6)
+# ACF dos resíduos
+acf(resid(fit2), xlab = "", ylab = "")
+```
+
+```{r}
+# ACF do quadrado dos resíduos
+acf(resid(fit2)^2, xlab = "", ylab = "")
+```
+
+```{r}
+# Teste Portmanteau de autocorrelação serial nos resíduos
+serial.test(fit2, lags.pt=8, type="PT.asymptotic")
+```
+
+```{r}
+# Teste Portmanteau para diversas ordens
+p <- c(); chi <- c(); graus <- c(); ordem <- c()
+# Loop para calcular o teste em diversas ordens
+for (i in 1:8){
+  p[i] <- as.numeric(serial.test(fit2, lags.pt = 7+i, type = "PT.asymptotic")$serial$p.value)
+  chi[i] <- as.numeric(serial.test(fit2, lags.pt = 7+i, type = "PT.asymptotic")$serial$statistic)
+  graus[i] <- as.numeric(serial.test(fit2, lags.pt = 7+i, type = "PT.asymptotic")$serial$parameter)
+  ordem[i] <- 7+i
+}
+# Agrupa as informações num data.frame
+PT <- data.frame(ordem = ordem, graus_liberdade = graus, estatística = chi, p_valor = p)
+kable(PT, align = 'c', col.names = c("Ordem", "Graus de liberdade", "Estatística", "P-valor"), caption = "Resultados do teste Portmanteau")
+```
+
+```{r}
+# Teste Breusch-Godfrey para diversas ordens
+p <- c(); LM <- c(); graus <- c(); ordem <- c()
+# Loop para calcular o teste para diversas ordens
+for (i in 1:10){
+  p[i] <- as.numeric(serial.test(fit2, lags.bg = i, type = "BG")$serial$p.value)
+  LM[i] <- as.numeric(serial.test(fit2, lags.bg = i, type = "BG")$serial$statistic)
+  graus[i] <- as.numeric(serial.test(fit2, lags.bg = i, type = "BG")$serial$parameter)
+  ordem[i] <- i
+}
+BG <- data.frame(ordem = ordem, graus_liberdade = graus, estatística = LM, p_valor = p)
+kable(BG, align = 'c', col.names = c("Ordem", "Graus de liberdade", "Estatística", "P-valor"), caption = "Resultados do teste Breusch-Godfrey")
+```
+
+```{r}
+# Teste ARCH (multivariado) para diversas ordens
+p <- c(); chi <- c(); graus <- c(); ordem <- c()
+# Loop para calcular o teste para diversas ordens
+for (i in 1:12){
+  p[i] <- as.numeric(arch.test(fit2, lags.multi = i)$arch.mul$p.value)
+  chi[i] <- as.numeric(arch.test(fit2, lags.multi = i)$arch.mul$statistic)
+  graus[i] <- as.numeric(arch.test(fit2, lags.multi = i)$arch.mul$parameter)
+  ordem[i] <- i
+}
+
+ARCH <- data.frame(ordem = ordem, graus_liberdade = graus, estatística = chi, p_valor = p)
+kable(ARCH, align = 'c', col.names = c("Ordem", "Graus de liberdade", "Estatística", "P-valor"), caption = "Resultados do teste ARCH-LM")
+```
+
+```{r}
+plot(predict(fit2, n.ahead = 45))
+```
+
+## Estimando a regressão do CAPM
+
+Ref: https://rpubs.com/jbajr1982/392718
+
+```{r}
+# estimando o modelo de regressão do CAPM
+mod1 <- lm(price.adjusted ~ selic.tax, data=df_bvsp_selic)
+# mostrando os resultados
+summary(mod1)
+```
+
+```{r}
+# Plotando o diagrama de dispersão e a reta de regressão linear
+ggplot(df_bvsp_selic, aes(x=price.adjusted, y=selic.tax)) + geom_point() + geom_smooth(method=lm, se=FALSE)
+```
+```{r}
+# autocorrelação
+bgtest(mod1)
+```
+
+```{r}
+# heteroscedasticidade
+bptest(mod1)
+```
+
+```{r}
+library(tseries)
+jarque.bera.test(mod1$residuals)
+```
+
+
+TODO: https://rpubs.com/jbajr1982/392718
+
+## Expectativas do COPOM nos contratos de DI1
+
+Ref: http://wilsonfreitas.github.io/posts/expectativas-do-copom-nos-contratos-de-di1.html
+
+TODO
+
