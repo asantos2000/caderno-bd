@@ -1,8 +1,3 @@
-```{r}
-# Limpando as variáveis do ambiente
-rm(list = ls())
-```
-
 Pacotes utilizados neste trabalho:
 
 ```{r warning=FALSE, message=FALSE}
@@ -24,6 +19,7 @@ library(gridExtra)
 library(GGally)
 library(readxl)
 library(ggformula)
+library(kableExtra)
 #conflicts(detail = TRUE)
 ```
 
@@ -40,7 +36,7 @@ df_bvsp = BatchGetSymbols('^BVSP', first.date = first_date,
  last.date = last_date)
 ```
 
-O período de análise será de `r floor(eval_period / 365)` anos, de `r first_date` até `r last_date`.
+O período de análise será de `r floor(eval_period / 365)` anos, de `r first_date` até `r last_date`. O inicio da série coincide com a 66º reunião do COPOM.
 
 O comportamento do índice bovespa neste período foi:
 
@@ -59,31 +55,33 @@ bov_plot <- ggplot(df_bvsp$df.tickers, aes(x = ref.date, y = price.adjusted)) +
  scale_y_continuous(labels = label_comma()) +
  theme(axis.text.x = element_text(angle = 90)
 )
+
+bov_plot
 ```
 
 ## Indicador SELIC
 
-A meta da taxa [SELIC](https://www.bcb.gov.br/estatisticas/grafico/graficoestatistica/metaselic) diária. Conjunto de dados obtido pela opção de download do gráfico.
+A meta da taxa Selic diária. O conjunto de dados foi obtido pela através da opção de download no gráfico em [BCB - Meta Selic](https://www.bcb.gov.br/estatisticas/grafico/graficoestatistica/metaselic).
 
 
 ```{r}
-df_selic_meta <- read.csv2(file = "../dados/selic-bcb-2022-12-11.csv",
+df_selic_meta <- read.csv2(file = "../dados/Taxa de juros - Selic - fixada pelo Comitê de Política Monetária.csv",
                            sep=";", dec=",",
-                           colClasses = c("character", "numeric"),
-                           col.names = c("ref.date", "selic.tax"))
-df_selic_meta <- transform(df_selic_meta, ref.date = as.Date(ref.date,'%Y-%m-%d'))
+                           colClasses = c("character", "numeric", "NULL"),
+                           col.names = c("ref.date", "selic.tax", ""))
+df_selic_meta <- transform(df_selic_meta, ref.date = as.Date(ref.date,'%d/%m/%Y'))
 
 df_selic_meta <- na.omit(df_selic_meta) %>% 
                     filter(ref.date >= first_date)
 
-tail(df_selic_meta)
-
+kable(tail(df_selic_meta)) %>%
+  kable_styling(latex_options = "striped")
 ```
-> O nome do arquivo indica a data da última extração.
+> Extraído em 11/12/2022.
 
 E o comportamento no período foi:
 
-```{r}
+```{r message=FALSE}
 selic_plot <- ggplot(df_selic_meta, aes(x = ref.date, y = selic.tax)) +
  geom_line() +
  scale_x_date(breaks = date_breaks("1 years"),
@@ -95,15 +93,17 @@ selic_plot <- ggplot(df_selic_meta, aes(x = ref.date, y = selic.tax)) +
  geom_smooth(method = "loess", se = FALSE) +
  scale_y_continuous(labels = label_comma()) +
  theme(axis.text.x = element_text(angle = 90))
+
+selic_plot
 ```
 
 ## Pesquisa Focus
 
-O Relatório Focus resume as estatísticas calculadas considerando as expectativas de mercado coletadas até a sexta-feira anterior à sua divulgação. Ele é divulgado toda segunda-feira. O relatório traz a evolução gráfica e o comportamento semanal das projeções para índices de preços, atividade econômica, câmbio, taxa Selic, entre outros indicadores. As projeções são do mercado, não do Banco Central. [BC - Focus](https://www.bcb.gov.br/publicacoes/focus).
+O Relatório Focus resume as estatísticas calculadas considerando as expectativas de mercado coletadas até a sexta-feira anterior à sua divulgação. Ele é divulgado toda segunda-feira. O relatório traz a evolução gráfica e o comportamento semanal das projeções para índices de preços, atividade econômica, câmbio, taxa Selic, entre outros indicadores. As projeções são do mercado, não do Banco Central. (FOCUS, 2022).
 
 Esse conjunto de dados é o resultado da pesquisa diária das expectativas para a taxa selic. Os respondentes são cerca de 120 bancos, gestores de recursos e demais instituições (empresas do setor real, distribuidoras, corretoras, consultorias e outras).
 
-As expectativas são expressadas na forma do mínimo e do máximo esperado.
+As expectativas são expressadas na forma de mínimos e máximos esperados.
 
 ```{r}
 df_selic_focus = rbcb::get_market_expectations("annual", "Selic",start_date = "2002-01-01",  end_date = "2022-12-31")
@@ -118,7 +118,8 @@ names(df_selic_focus)[3] = "min"
 names(df_selic_focus)[4] = "max"
 names(df_selic_focus)[5] = "respondents"
 
-tail(df_selic_focus)
+kable(tail(df_selic_focus)) %>%
+  kable_styling(latex_options = "striped")
 ```
 
 ## Reuniões COPOM
@@ -143,7 +144,8 @@ names(df_reuniao_copom)[5] = "term.start"
 names(df_reuniao_copom)[6] = "term.end"
 names(df_reuniao_copom)[7] = "decision.target"
 
-head(df_reuniao_copom)
+kable(tail(df_reuniao_copom)) %>%
+  kable_styling(latex_options = "striped")
 ```
 
 
@@ -180,13 +182,18 @@ df_bvsp_selic <- merge(df_bvsp_selic, df_reuniao_copom, by = 'ref.date', all.x =
 df_bvsp_selic <- df_bvsp_selic %>% 
                     fill(c(decision.target, meeting.number, term.start, term.end), .direction = "downup")
 
-round(stat.desc(df_bvsp_selic))
+kable(round(stat.desc(df_bvsp_selic))) %>%
+  kable_styling(latex_options = "striped")
 ```
 
 ```{r}
 gf_point(price.adjusted ~ selic.tax, color = ~ selic.tax, size = ~ price.adjusted, alpha = 0.50, data = df_bvsp_selic) + scale_y_continuous(labels = label_comma())
 ```
-O preço ibovespa ajutado explicado pela taxa selic parece seguir a tendência observada nos gráficos anteriores, quanto menor a taxa, maior é o preço ajustado.
+O preço ibovespa ajustado, explicado pela taxa selic, parece seguir a tendência observada nos gráficos anteriores, quanto menor a taxa, maior é o preço ajustado.
+
+Ainda de acordo com o gráfico acima, o log retorno do preço ajustado das ações não parece ser influenciado pela diferença da meta vs o máximo esperado. Pela hipótese de que a surpresa faria o índice bovespa recuar, quanto menor a diferença, menor deveria ser o retorno, o que não foi observado.
+
+As ocorrências de "surpresa", são listadas abaixo:
 
 ```{r}
 df_not_expected <- df_bvsp_selic[order(-df_bvsp_selic$meeting.number), ] %>% 
@@ -195,7 +202,9 @@ df_not_expected <- df_bvsp_selic[order(-df_bvsp_selic$meeting.number), ] %>%
                           group_by(meeting.number) %>%
                             slice(which.min(ref.date))
 
-df_not_expected
+
+kable(df_not_expected) %>%
+  kable_styling(latex_options = "striped")
 ```
 
 ```{r}
@@ -205,8 +214,8 @@ log.retorno[length(log.retorno) + 1] = 0
 gf_point(log.retorno ~ diff.meta.max, color = ~ diff.meta.max, alpha = 0.50, data = df_bvsp_selic) + scale_y_continuous(labels = label_comma())
 ```
 
-De acordo com o gráfico acima, o log retorno do preço ajustado das ações não parece ser influenciado pela diferença da meta vs o máximo esperado. Pela hipótese de que a surpresa faria o índice bovespa recuar, quanto menor a diferença, menor deveria ser o retorno, o que não foi observado.
 
+A diferençca entre o esperado e a decisão tendem a variar de forma positiva, sugerindo que o mercado antecipa positivamente as decisões com razoável precisão.
 
 ```{r message=FALSE, warning=FALSE}
 temp <- df_bvsp_selic[order(-df_bvsp_selic$meeting.number), ] %>% 
@@ -226,8 +235,8 @@ ggplot(temp, aes(x = ref.date, y = diff.meta.max))+
 Reuniões cuja a meta foi superior ao máximo esparado pelos respondentes da pesquisa focus.
 
 ```{r}
-temp %>%
-  filter(diff.meta.max < 0)
+kable(temp %>% filter(diff.meta.max < 0)) %>%
+  kable_styling(latex_options = "striped")
 ```
 
 Retorno sobre o preço ajustado do ibovespa entre as reuniões do copom.
@@ -289,7 +298,10 @@ for (row in 1:nrow(df_not_expected)) {
 meeting_eval$period.start <- as.Date(meeting_eval$period.start) 
 meeting_eval$period.end = as.Date(meeting_eval$period.end)
 meeting_eval$meeting.date = as.Date(meeting_eval$meeting.date)
-meeting_eval
+
+
+kable(meeting_eval) %>%
+  kable_styling(latex_options = "striped")
 ```
 
 ```{r}
@@ -559,6 +571,7 @@ period_eval[nrow(period_eval) + 1, ] <- list("COVID-19", start_date, end_date, c
 ### Resumo
 
 ```{r}
-period_eval
+kable(period_eval) %>%
+  kable_styling(latex_options = "striped")
 ```
 

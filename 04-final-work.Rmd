@@ -12,6 +12,30 @@ De acordo com o conhecimento convencional, mudanças nas taxas de juros afetaria
 
 Porém, a atividade econômica também exerce efeito importante sobre a determinação dos preços na Bolsa de Valores, particularmente no Ibovespa. Os preços das ações são positivamente relacionados com a atividade econômica, medida pelo nível de produção industrial. A política monetária possui efeito significativo sobre a produção industrial o que indicaria a existência do segundo canal pelo qual a política monetária afeta os preços das ações.(DOS SANTOS et al., 2006)
 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(forcats)
+
+df_setores_b3_part <- read_excel("dados/setorial-b3-05-12-2022-port.xlsx", sheet = 3)
+
+temp <- df_setores_b3_part %>% filter(part_percent > 2)
+
+temp %>%
+  arrange(part_percent) %>%    # First sort by val. This sort the dataframe but NOT the factor levels
+  mutate(codigo = fct_reorder(codigo, part_percent)) %>%   # This trick update the factor levels
+  ggplot(aes(x=codigo, y=part_percent)) +
+    geom_segment( aes(xend=codigo, yend=0)) +
+    geom_point( size=4, color="orange") +
+    coord_flip() +
+    theme_bw() +
+    xlab("")+
+    labs(title='Composição índice ibovespa (> 2%)',
+    caption='Fonte: B3.')
+```
+
+
 ## Objetivo
 
 O objetivo é mensurar e analisar as respostas do mercado acionário às decisões do Comitê de Política Monetária do Banco Central do Brasil (COPOM) em relação à taxa básica de juro, verificando o comportamento do índice agregado da Bolsa de Valores de São Paulo (Bovespa).
@@ -38,7 +62,7 @@ Cada decisão tomada pelo COPOM é estudada por esses agentes, que antecipam em 
 
 Conseqüentemente, analisar-se a relação direta entre as variações na meta da taxa de juro e as do Índice Bovespa pode mostrar baixa significância entre as variáveis; de fato, se os mercados inevitavelmente não gerarão respostas a mudanças já esperadas, então é preciso distinguir na variação da meta suas componentes antecipada e não antecipada. É o que proporemos a seguir. (CASTRO et al., 2019)
 
-Após apresentação da evolução do índice ibovespa, taxa selic foi calculado o efeito da decisão do COPOM no índice bovespa num período de dez dias antes de depois da decisão e qual foi o retorno para o período.
+Foi avaliado a evolução do índice ibovespa e taxa selic e então o efeito da decisão do COPOM no índice bovespa num período de dez dias antes e depois da decisão e qual foi o retorno nos respectivos períodos.
 
 Em seguida, foi calculado o coeficiente de correlação linear de Pearson entre o índice bovespa e a taxa selic para toda a série e para quatro períodos distintos:
 
@@ -67,7 +91,7 @@ Foi considerado que:
 
 Sendo:
 
-- $S_t$: surpresa na reunião
+- $s_t$: surpresa na reunião
 - $d_t$: decisão do copom sobre o valor da taxa Selic
 - $m_t$: valor máximo informado pelos respondentes como expectativa para o valor da taxa Selic
 
@@ -83,13 +107,15 @@ Sempre que $s_t$ é negativo, o mercado esperava um valor menor do que o decidid
 
 ## Conclusão
 
-A hipótese de que Ibovespa é influenciado pela taxa Selic foi testada e há indícios que existe uma forte correlação, como demonstrado no quadro resumo. Ao avaliar toda a série, encontramos coeficientes de correlação superiores a $0,8$, porém, quando analisamos os retornos do índice próximos as decisões do COPOM, os resultados não indicam uma tendência, sendo que apróximadamente $50%$ das vezes as decisões consideradas surpresa afetaram negativamente e positivamente e o acumulado dos retornos para esses períodos foi positivo.
+A hipótese de que Ibovespa é influenciado pela taxa Selic foi testada e há indícios que existe uma forte correlação, como demonstrado no quadro resumo. Ao avaliar toda a série, encontramos coeficientes de correlação superiores a $0,8$, porém, quando analisamos os retornos do índice próximos as decisões do COPOM, os resultados não indicam uma tendência, sendo que apróximadamente $50%$ das vezes as decisões consideradas surpresa afetaram negativamente, porém o acumulado dos retornos para esses períodos foi positivo.
 
 É de opinião deste autor, que com base nos dados obtidos, existe uma correlação forte entre a Selic e o Ibovespa, porém, essa relação não necessáriamente é unilateral ou exclusiva, podendo outros indicadores macroeconomicos e fatores sócio-economicos influenciarem ambas as séries e suas relações.
 
 Como trabalho futuro, revisar a forma como a surpresa do mercado é calculada, seguindo o modelo usado por Gonçalves Junior (2007) e incluir outros indicadores macroeconomicos, como utilizados por De Souza Grôppo (2005). 
 
 ## Referências
+
+FOCUS. Pesquisa Focus. Disponível em: https://www.bcb.gov.br/publicacoes/focus. Acesso em: 03 dez. 2022.
 
 CASTRO, F. Henrique et al. Fifty-year History of the Ibovespa. **Brazilian Review of Finance**, v. 17, n. 3, p. 47-65, 2019.
 
@@ -110,3 +136,7 @@ WIKIPEDIA. Lista de crises econômicas no Brasil. Disponível em: https://pt.wik
 [B3 Consultas - Setores](https://www.b3.com.br/data/files/81/81/97/30/61199610DAB74796AC094EA8/ClassifSetorial.zip)
 
 [Ibovespa - Carteira do Dia - 08/12/22](https://www.b3.com.br/pt_br/market-data-e-indices/indices/indices-amplos/indice-ibovespa-ibovespa-composicao-da-carteira.htm)
+
+## Apêndice A - Código-fonte
+
+Todos os códigos e dados, com exceção dos obtidos _on-line_, podem ser encontrados em https://github.com/asantos2000/caderno-bd
