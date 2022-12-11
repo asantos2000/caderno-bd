@@ -131,12 +131,8 @@ YOSHIDA, Olga Satomi. **BIGDATA ANALITYCS**: data 22-11-2022. São Paulo: Instit
 
 WIKIPEDIA. Lista de crises econômicas no Brasil. Disponível em: https://pt.wikipedia.org/wiki/Lista_de_crises_econ%C3%B4micas_no_Brasil. Acesso em: 03 dez. 2022.
 
-[Por que usar transformação logarítmica em dados?](http://rstudio-pubs-static.s3.amazonaws.com/289147_99e32d5403f942339c3fe05414ac62fd.html)
-
-[B3 Consultas - Setores](https://www.b3.com.br/data/files/81/81/97/30/61199610DAB74796AC094EA8/ClassifSetorial.zip)
-
-[Ibovespa - Carteira do Dia - 08/12/22](https://www.b3.com.br/pt_br/market-data-e-indices/indices/indices-amplos/indice-ibovespa-ibovespa-composicao-da-carteira.htm)
-
 ## Apêndice A - Código-fonte
 
-Todos os códigos e dados, com exceção dos obtidos _on-line_, podem ser encontrados em https://github.com/asantos2000/caderno-bd
+Todos os códigos e dados, com exceção dos obtidos _on-line_, podem ser encontrados em https://github.com/asantos2000/caderno-bd.
+
+O caderno pode ser acessado em https://bookdown.org/adsantos/caderno-bd/.
