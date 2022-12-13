@@ -23,7 +23,7 @@ library(kableExtra)
 #conflicts(detail = TRUE)
 ```
 
-## Índice IBOVESPA
+## Índice Bovespa
 
 Dados obtidos pela biblioteca `BatchGetSymbols` que utiliza o Yahoo Finance como fonte de dados.
 
@@ -38,7 +38,9 @@ df_bvsp = BatchGetSymbols('^BVSP', first.date = first_date,
 
 O período de análise será de `r floor(eval_period / 365)` anos, de `r first_date` até `r last_date`. O inicio da série coincide com a 66º reunião do COPOM.
 
-O comportamento do índice bovespa neste período foi:
+O período anterior a 2002 não foi considerado pela situação de hiperinflação vivenciada antes do plano real e o período de consolidação (1994-2001).
+
+O comportamento do índice Bovespa neste período foi:
 
 ```{r message=FALSE, warning=FALSE}
 bov_plot <- ggplot(df_bvsp$df.tickers, aes(x = ref.date, y = price.adjusted)) +
@@ -59,7 +61,7 @@ bov_plot <- ggplot(df_bvsp$df.tickers, aes(x = ref.date, y = price.adjusted)) +
 bov_plot
 ```
 
-## Indicador SELIC
+## Indicador Selic
 
 A meta da taxa Selic diária. O conjunto de dados foi obtido pela através da opção de download no gráfico em [BCB - Meta Selic](https://www.bcb.gov.br/estatisticas/grafico/graficoestatistica/metaselic).
 
@@ -99,9 +101,9 @@ selic_plot
 
 ## Pesquisa Focus
 
-O Relatório Focus resume as estatísticas calculadas considerando as expectativas de mercado coletadas até a sexta-feira anterior à sua divulgação. Ele é divulgado toda segunda-feira. O relatório traz a evolução gráfica e o comportamento semanal das projeções para índices de preços, atividade econômica, câmbio, taxa Selic, entre outros indicadores. As projeções são do mercado, não do Banco Central. (FOCUS, 2022).
+O [Relatório Focus](https://www.bcb.gov.br/publicacoes/focus) resume as estatísticas calculadas considerando as expectativas de mercado coletadas até a sexta-feira anterior à sua divulgação. Ele é divulgado toda segunda-feira. O relatório traz a evolução gráfica e o comportamento semanal das projeções para índices de preços, atividade econômica, câmbio, taxa Selic, entre outros indicadores. As projeções são do mercado, não do Banco Central. (FOCUS, 2022).
 
-Esse conjunto de dados é o resultado da pesquisa diária das expectativas para a taxa selic. Os respondentes são cerca de 120 bancos, gestores de recursos e demais instituições (empresas do setor real, distribuidoras, corretoras, consultorias e outras).
+Esse conjunto de dados é o resultado da pesquisa diária das expectativas para a taxa Selic. Os respondentes são cerca de 120 bancos, gestores de recursos e demais instituições (empresas do setor real, distribuidoras, corretoras, consultorias e outras).
 
 As expectativas são expressadas na forma de mínimos e máximos esperados.
 
@@ -149,7 +151,7 @@ kable(tail(df_reuniao_copom)) %>%
 ```
 
 
-## Ibovespa e selic
+## Ibovespa e Selic
 
 Apresentando gráficamente as duas séries:
 
@@ -161,7 +163,7 @@ Elas seguem tendências opostas, indicando uma correlação negativa, o que apar
 
 ## Unindo os conjuntos de dados
 
-Os conjuntos de dados do índice ibovespa será aumentado com os conjuntos de dados da meta selic e com as reuniões do COPOM. 
+Os conjuntos de dados do índice Ibovespa será aumentado com os conjuntos de dados da meta Selic e com as reuniões do COPOM. 
 
 ```{r}
 # Usando apenas valor ajustado
@@ -189,9 +191,9 @@ kable(round(stat.desc(df_bvsp_selic))) %>%
 ```{r}
 gf_point(price.adjusted ~ selic.tax, color = ~ selic.tax, size = ~ price.adjusted, alpha = 0.50, data = df_bvsp_selic) + scale_y_continuous(labels = label_comma())
 ```
-O preço ibovespa ajustado, explicado pela taxa selic, parece seguir a tendência observada nos gráficos anteriores, quanto menor a taxa, maior é o preço ajustado.
+O preço Ibovespa ajustado, explicado pela taxa Selic, parece seguir a tendência observada nos gráficos anteriores, quanto menor a taxa, maior é o preço ajustado.
 
-Ainda de acordo com o gráfico acima, o log retorno do preço ajustado das ações não parece ser influenciado pela diferença da meta vs o máximo esperado. Pela hipótese de que a surpresa faria o índice bovespa recuar, quanto menor a diferença, menor deveria ser o retorno, o que não foi observado.
+Ainda de acordo com o gráfico acima, o log retorno do preço ajustado das ações não parece ser influenciado pela diferença da meta vs o máximo esperado. Pela hipótese de que a surpresa faria o índice Bovespa recuar, quanto menor a diferença, menor deveria ser o retorno, o que não foi observado.
 
 As ocorrências de "surpresa", são listadas abaixo:
 
@@ -215,7 +217,7 @@ gf_point(log.retorno ~ diff.meta.max, color = ~ diff.meta.max, alpha = 0.50, dat
 ```
 
 
-A diferençca entre o esperado e a decisão tendem a variar de forma positiva, sugerindo que o mercado antecipa positivamente as decisões com razoável precisão.
+A diferença entre o esperado e a decisão tendem a variar de forma positiva, sugerindo que o mercado antecipa positivamente as decisões com razoável precisão.
 
 ```{r message=FALSE, warning=FALSE}
 temp <- df_bvsp_selic[order(-df_bvsp_selic$meeting.number), ] %>% 
@@ -239,7 +241,7 @@ kable(temp %>% filter(diff.meta.max < 0)) %>%
   kable_styling(latex_options = "striped")
 ```
 
-Retorno sobre o preço ajustado do ibovespa entre as reuniões do copom.
+Retorno sobre o preço ajustado do Ibovespa entre as reuniões do copom.
 
 ```{r message=FALSE, warning=FALSE}
 ts_temp <- xts(temp[,-1], order.by=as.Date(temp[,1], "%Y-%m-%d"))
@@ -258,7 +260,7 @@ ggplot(ret_simples, aes(x = Index, y = price.adjusted))+
 
 Computando o log retorno entre as datas das reuniões do COPOM e o preço ajustado, não há uma tendência explícita, sendo que os ganhos de `r sum(ret_simples[ret_simples > 0])` (log retorno maior que zero) superam as perdas (`r sum(ret_simples[ret_simples < 0])`). Totalizando um retorno de `r sum(ret_simples)`.
 
-## Preço ibovespa ajustado antes e depois da reunião
+## Preço Ibovespa ajustado antes e depois da reunião
 
 ```{r}
 offset <- 10
@@ -324,9 +326,9 @@ Avaliando o retorno nos períodos `r offset` dias antes e depois das reuniões, 
 write_rds(df_bvsp_selic, "../dados/df_bvsp_selic.rds")
 ```
 
-## Correlação ibovespa e selic
+## Correlação Ibovespa e Selic
 
-Comparando o índice ibovespa e a selic, percebemos que há uma relação, inversa, entre as duas séries.
+Comparando o Ibovespa e a Selic, percebemos que há uma relação, inversa, entre as duas séries.
 
 ```{r warning=FALSE, message=FALSE}
 bvsp_norm <- sd(df_bvsp_selic$price.adjusted, na.rm=TRUE)
@@ -399,7 +401,7 @@ Teste correlação
 cor.test(df_bvsp_selic$price.adjusted, df_bvsp_selic$selic.tax, method=c("pearson"))
 ```
 
-Outra forma de exibir a correlação entre ibovespa e selic. A relação foi calculada tanto para o valor nominal, quanto para seus respectivos logs.
+Outra forma de exibir a correlação entre Ibovespa e Selic. A relação foi calculada tanto para o valor nominal, quanto para seus respectivos logs.
 
 ```{r}
 ggcorr(df_bvsp_selic %>% select(price.adjusted, selic.tax, price.adjusted.norm, selic.tax.norm), method = c("pairwise", "pearson"), label = TRUE, label_alpha = TRUE) 
@@ -421,7 +423,7 @@ Avaliando para o período de 2004 a 2007: período de início da redução de ju
 start_date = '2004-01-01'
 end_date = '2007-12-31'
 df_bvsp_selic_long %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     plot_time_series(.date_var = ref.date,
                      .value = value,
                      .facet_vars = names)
@@ -429,7 +431,7 @@ df_bvsp_selic_long %>%
 
 ```{r}
 correlation = df_bvsp_selic %>%
-                filter(ref.date <= start_date & ref.date <= end_date) %>%
+                filter(ref.date >= start_date & ref.date <= end_date) %>%
                   with(cor(price.adjusted, selic.tax, method = c("pearson")))
 correlation
 ```
@@ -438,7 +440,7 @@ Teste correlação
 
 ```{r}
 df_bvsp_selic %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     with(cor.test(price.adjusted, selic.tax, method=c("pearson")))
 
 period_eval[nrow(period_eval) + 1, ] <- list("Crise dos subprime", start_date, end_date, correlation)
@@ -452,7 +454,7 @@ No período de 2008 a 2010 houve o auge da crise financeira mundial no Brasil at
 start_date = '2008-01-01'
 end_date = '2010-12-31'
 df_bvsp_selic_long %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     plot_time_series(.date_var = ref.date,
                      .value = value,
                      .facet_vars = names)
@@ -460,7 +462,7 @@ df_bvsp_selic_long %>%
 
 ```{r}
 correlation = df_bvsp_selic %>%
-                filter(ref.date <= start_date & ref.date <= end_date) %>%
+                filter(ref.date >= start_date & ref.date <= end_date) %>%
                   with(cor(price.adjusted, selic.tax, method = c("pearson")))
 correlation
 ```
@@ -469,13 +471,13 @@ Teste correlação
 
 ```{r}
 df_bvsp_selic %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     with(cor.test(price.adjusted, selic.tax, method=c("pearson")))
 
 period_eval[nrow(period_eval) + 1, ] <- list("Crise financeira mundial", start_date, end_date, correlation)
 ```
 
-### Crise financeira Europa
+### Crise da zona do euro
 
 De 2011 a 2012 foi o período que inclui tendência de redução da taxa básica de juros e a crise financeira, iniciada na Europa em 2011.
 
@@ -483,7 +485,7 @@ De 2011 a 2012 foi o período que inclui tendência de redução da taxa básica
 start_date = '2011-01-01'
 end_date = '2012-12-31'
 df_bvsp_selic_long %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     plot_time_series(.date_var = ref.date,
                      .value = value,
                      .facet_vars = names)
@@ -491,7 +493,7 @@ df_bvsp_selic_long %>%
 
 ```{r}
 correlation = df_bvsp_selic %>%
-                filter(ref.date <= start_date & ref.date <= end_date) %>%
+                filter(ref.date >= start_date & ref.date <= end_date) %>%
                   with(cor(price.adjusted, selic.tax, method = c("pearson")))
 correlation
 ```
@@ -500,10 +502,10 @@ Teste correlação
 
 ```{r}
 df_bvsp_selic %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     with(cor.test(price.adjusted, selic.tax, method=c("pearson")))
 
-period_eval[nrow(period_eval) + 1, ] <- list("Crise financeira Europa", start_date, end_date, correlation)
+period_eval[nrow(period_eval) + 1, ] <- list("Crise da zona do euro", start_date, end_date, correlation)
 ```
 
 ### Grande recessão brasileira
@@ -514,7 +516,7 @@ No período de 2013 a 2016 houve a crise econômica de 2014, conhecida como a "g
 start_date = '2013-01-01'
 end_date = '2016-12-31'
 df_bvsp_selic_long %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     plot_time_series(.date_var = ref.date,
                      .value = value,
                      .facet_vars = names)
@@ -522,7 +524,7 @@ df_bvsp_selic_long %>%
 
 ```{r}
 correlation = df_bvsp_selic %>%
-                filter(ref.date <= start_date & ref.date <= end_date) %>%
+                filter(ref.date >= start_date & ref.date <= end_date) %>%
                   with(cor(price.adjusted, selic.tax, method = c("pearson")))
 correlation
 ```
@@ -531,7 +533,7 @@ Teste correlação
 
 ```{r}
 df_bvsp_selic %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     with(cor.test(price.adjusted, selic.tax, method=c("pearson")))
 
 period_eval[nrow(period_eval) + 1, ] <- list("Grande recessão brasileira", start_date, end_date, correlation)
@@ -545,7 +547,7 @@ Mais recente, o período de 2017 a 2022 inclue os efeitos da COVID-19, iniciada 
 start_date = '2017-01-01'
 end_date = '2022-12-31'
 df_bvsp_selic_long %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     plot_time_series(.date_var = ref.date,
                      .value = value,
                      .facet_vars = names)
@@ -553,7 +555,7 @@ df_bvsp_selic_long %>%
 
 ```{r}
 correlation = df_bvsp_selic %>%
-                filter(ref.date <= start_date & ref.date <= end_date) %>%
+                filter(ref.date >= start_date & ref.date <= end_date) %>%
                   with(cor(price.adjusted, selic.tax, method = c("pearson")))
 correlation
 ```
@@ -562,7 +564,7 @@ Teste correlação
 
 ```{r}
 df_bvsp_selic %>%
-  filter(ref.date <= start_date & ref.date <= end_date) %>%
+  filter(ref.date >= start_date & ref.date <= end_date) %>%
     with(cor.test(price.adjusted, selic.tax, method=c("pearson")))
 
 period_eval[nrow(period_eval) + 1, ] <- list("COVID-19", start_date, end_date, correlation)

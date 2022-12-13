@@ -117,3 +117,5 @@ grande-recessão-brasileira
 covid-19
 resumo
 apêndice-a---código-fonte
+índice-bovespa
+crise-da-zona-do-euro
