@@ -149,9 +149,3 @@ LUCAS, Robert E.; SARGENT, Thomas. After Keynesian Macroeconomics. In: Miller, P
 YOSHIDA, Olga Satomi. **BIGDATA ANALITYCS**: data 22-11-2022. São Paulo: Instituto de Pesquisas Tecnológicas do Estado de São Paulo, 2022. 4 slides, color.
 
 WIKIPEDIA. Lista de crises econômicas no Brasil. Disponível em: https://pt.wikipedia.org/wiki/Lista_de_crises_econ%C3%B4micas_no_Brasil. Acesso em: 03 dez. 2022.
-
-## Apêndice A - Código-fonte
-
-Todos os códigos e dados, com exceção dos obtidos _on-line_, podem ser encontrados em https://github.com/asantos2000/caderno-bd.
-
-O caderno pode ser acessado em https://bookdown.org/adsantos/caderno-bd/.

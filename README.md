@@ -7,4 +7,4 @@ Mestrado em Computação Aplicada
 
 ## Conteúdo
 
-Caderno em R com exercícios da disciplina de Big Data.
+Caderno em R com exercícios da disciplina de Big Data publicado em https://bookdown.org/adsantos/caderno-bd/.

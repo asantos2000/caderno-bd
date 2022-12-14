@@ -33,3 +33,9 @@ knitr::write_bib(c(
   .packages(), 'bookdown', 'knitr', 'rmarkdown'
 ), 'packages.bib')
 ```
+
+## Apêndice A - Código-fonte
+
+Todos os códigos e dados, com exceção dos obtidos _on-line_, podem ser encontrados em https://github.com/asantos2000/caderno-bd.
+
+O caderno pode ser acessado em https://bookdown.org/adsantos/caderno-bd/.
