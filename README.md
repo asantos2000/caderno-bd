@@ -13,7 +13,9 @@ Caderno em R com exercícios da disciplina de Big Data publicado em https://book
 ## Insenção de responsabilidade
 
 Todas as informações e dados pertencem aos seus respectivos donos.
+
 Trabalho exclusivamente para fins acadêmicos.
+
 As informações expressas neste trabalho são de opinião exclusiva do autor.
 
 
