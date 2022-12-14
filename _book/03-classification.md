@@ -57,7 +57,7 @@ httr::GET("http://www.ime.usp.br/~jmsinger/MorettinSinger/inibina.xls", httr::wr
 
 ```
 ## Response [https://www.ime.usp.br/~jmsinger/MorettinSinger/inibina.xls]
-##   Date: 2022-12-04 22:01
+##   Date: 2022-12-14 00:18
 ##   Status: 200
 ##   Content-Type: application/vnd.ms-excel
 ##   Size: 8.7 kB
@@ -1140,7 +1140,7 @@ httr::GET("http://www.ime.usp.br/~jmsinger/MorettinSinger/disco.xls", httr::writ
 
 ```
 ## Response [https://www.ime.usp.br/~jmsinger/MorettinSinger/disco.xls]
-##   Date: 2022-12-04 22:01
+##   Date: 2022-12-14 00:18
 ##   Status: 200
 ##   Content-Type: application/vnd.ms-excel
 ##   Size: 11.3 kB
@@ -2923,7 +2923,7 @@ httr::GET("http://www.ime.usp.br/~jmsinger/MorettinSinger/tipofacial.xls", httr:
 
 ```
 ## Response [https://www.ime.usp.br/~jmsinger/MorettinSinger/tipofacial.xls]
-##   Date: 2022-12-04 22:01
+##   Date: 2022-12-14 00:18
 ##   Status: 200
 ##   Content-Type: application/vnd.ms-excel
 ##   Size: 20.5 kB

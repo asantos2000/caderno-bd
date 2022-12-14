@@ -1,7 +1,7 @@
 ---
 title: "Caderno de exercícos Mestrado de computação aplicada"
 author: "Anderson dos Santos"
-date: "2022-12-04"
+date: "2022-12-13"
 site: bookdown::bookdown_site
 documentclass: book
 bibliography: [book.bib, packages.bib]
